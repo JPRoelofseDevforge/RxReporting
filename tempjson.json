@@ -1,0 +1,38 @@
+[
+  {
+    "MemberDependant": "100006 - 00",
+    "DiseaseProtocolName": "Diabetes",
+    "DateCalculated": "2025-09-20 03:05:09.943",
+    "RiskCalculationTypeName": "Adherence",
+    "RiskRatingName": "High Risk",
+    "MemberNumber": "100006",
+    "DependantCode": "0"
+  },
+  {
+    "MemberDependant": "100006 - 00",
+    "DiseaseProtocolName": "Diabetes",
+    "DateCalculated": "2025-09-20 03:05:09.943",
+    "RiskCalculationTypeName": "ManualPathology",
+    "RiskRatingName": "High Risk",
+    "MemberNumber": "100006",
+    "DependantCode": "0"
+  },
+  {
+    "MemberDependant": "100006 - 00",
+    "DiseaseProtocolName": "Diabetes",
+    "DateCalculated": "2025-09-20 03:05:09.943",
+    "RiskCalculationTypeName": "Authorisation",
+    "RiskRatingName": "High Risk",
+    "MemberNumber": "100006",
+    "DependantCode": "0"
+  },
+  {
+    "MemberDependant": "100006 - 00",
+    "DiseaseProtocolName": "Diabetes",
+    "DateCalculated": "2025-09-20 03:05:09.943",
+    "RiskCalculationTypeName": "RQTechPathology",
+    "RiskRatingName": "High Risk",
+    "MemberNumber": "100006",
+    "DependantCode": "0"
+  }
+]

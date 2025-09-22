@@ -30,14 +30,51 @@
             <section id="uploadSection" class="upload-section">
                 <div class="upload-container">
                     <div class="upload-icon">
-                        <i class="fas fa-file-excel"></i>
+                        <i class="fas fa-database"></i>
                     </div>
-                    <h2>Upload Medical Data</h2>
-                    <p>Upload your Excel file to start analyzing medical data and generating reports</p>
-                    <button id="uploadBtnMain" class="btn btn-primary btn-large">
-                        <i class="fas fa-upload"></i> Choose Files
-                    </button>
-                    <p class="file-info">Supported formats: .xlsx, .xls, .json<br><small><em>You can select multiple files at once</em></small></p>
+                    <h2>Load Medical Data</h2>
+                    <p>Choose how you want to load your medical data for analysis</p>
+
+                    <!-- Data Source Selection -->
+                    <div class="data-source-selector">
+                        <div class="source-option">
+                            <input type="radio" id="uploadOption" name="dataSource" value="upload" checked>
+                            <label for="uploadOption" class="source-option-label">
+                                <i class="fas fa-upload"></i>
+                                <div class="option-content">
+                                    <h3>Upload Files</h3>
+                                    <p>Upload your Excel or JSON files to analyze your medical data</p>
+                                    <small>Supported formats: .xlsx, .xls, .json</small>
+                                </div>
+                            </label>
+                        </div>
+
+                        <div class="source-option">
+                            <input type="radio" id="sampleOption" name="dataSource" value="sample">
+                            <label for="sampleOption" class="source-option-label">
+                                <i class="fas fa-database"></i>
+                                <div class="option-content">
+                                    <h3>Use Sample Data</h3>
+                                    <p>Use the built-in sample dataset for demonstration and testing</p>
+                                    <small>Contains sample diabetes risk calculation data</small>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button id="uploadBtnMain" class="btn btn-primary btn-large">
+                            <i class="fas fa-upload"></i> Choose Files
+                        </button>
+                        <button id="loadSampleBtn" class="btn btn-secondary btn-large">
+                            <i class="fas fa-database"></i> Load Sample Data
+                        </button>
+                    </div>
+
+                    <div class="file-info" id="fileInfo">
+                        <small><em>Select multiple files at once if needed</em></small>
+                    </div>
                 </div>
             </section>
 

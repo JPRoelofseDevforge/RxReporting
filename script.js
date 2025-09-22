@@ -10,6 +10,7 @@ class RxReportingApp {
 
         this.initializeElements();
         this.bindEvents();
+        this.updateDataSourceDisplay(); // Initialize the display state
         this.loadStoredData();
     }
 
@@ -20,6 +21,10 @@ class RxReportingApp {
         this.fileInput = document.getElementById('fileInput');
         this.uploadBtn = document.getElementById('uploadBtn');
         this.uploadBtnMain = document.getElementById('uploadBtnMain');
+        this.loadSampleBtn = document.getElementById('loadSampleBtn');
+        this.uploadOption = document.getElementById('uploadOption');
+        this.sampleOption = document.getElementById('sampleOption');
+        this.fileInfo = document.getElementById('fileInfo');
 
         // Summary cards
         this.totalMembers = document.getElementById('totalMembers');
@@ -69,6 +74,13 @@ class RxReportingApp {
         this.uploadBtn.addEventListener('click', () => this.fileInput.click());
         this.uploadBtnMain.addEventListener('click', () => this.fileInput.click());
         this.fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
+
+        // Sample data events
+        this.loadSampleBtn.addEventListener('click', () => this.loadSampleData());
+
+        // Data source selection events
+        this.uploadOption.addEventListener('change', () => this.updateDataSourceDisplay());
+        this.sampleOption.addEventListener('change', () => this.updateDataSourceDisplay());
 
         // Chart type changes
         document.getElementById('diseaseChartType').addEventListener('change', (e) => this.updateDiseaseChart(e.target.value));
@@ -164,6 +176,70 @@ class RxReportingApp {
             console.error('Error processing files:', error);
             alert('Error processing files. Please check the file formats and try again.');
             this.hideLoading();
+        }
+    }
+
+    async loadSampleData() {
+        try {
+            this.showLoading('Loading sample data...');
+
+            // Load the sample data from Azure blob storage
+            const response = await fetch('https://samapiimages.blob.core.windows.net/sam/jsonfile.json');
+            if (!response.ok) {
+                throw new Error('Failed to load sample data');
+            }
+
+            const sampleData = await response.json();
+            this.data = this.processSampleData(sampleData);
+            this.saveDataToStorage();
+            this.initializeDashboard();
+
+            this.hideLoading();
+            this.showSuccessMessage('Successfully loaded sample data');
+
+        } catch (error) {
+            console.error('Error loading sample data:', error);
+            alert('Error loading sample data. Please try again.');
+            this.hideLoading();
+        }
+    }
+
+    processSampleData(sampleData) {
+        return sampleData.map(row => {
+            // Map the sample data fields to the expected format
+            const processedRow = {
+                MemberNumber: row.MemberNumber,
+                DependentCode: row.DependantCode,
+                DiseaseProtocolName: row.DiseaseProtocolName,
+                RiskRatingName: row.RiskRatingName,
+                RiskCalculationTypeName: row.RiskCalculationTypeName,
+                DateCalculated: row.DateCalculated,
+                MemberDependant: row.MemberDependant
+            };
+
+            // All sample data is considered active
+            processedRow.isActive = true;
+            processedRow.activeStatusReason = 'Sample data loaded';
+            processedRow.activeStatusSource = 'sample_data';
+
+            return processedRow;
+        });
+    }
+
+    updateDataSourceDisplay() {
+        const actionButtons = document.querySelector('.action-buttons');
+        const fileInfo = document.getElementById('fileInfo');
+
+        if (this.uploadOption.checked) {
+            // Show upload button, hide sample button
+            document.getElementById('uploadBtnMain').style.display = 'inline-block';
+            document.getElementById('loadSampleBtn').style.display = 'none';
+            fileInfo.innerHTML = '<small><em>Select multiple files at once if needed</em></small>';
+        } else {
+            // Show sample button, hide upload button
+            document.getElementById('uploadBtnMain').style.display = 'none';
+            document.getElementById('loadSampleBtn').style.display = 'inline-block';
+            fileInfo.innerHTML = '<small><em>Sample data contains diabetes risk calculation records</em></small>';
         }
     }
 
