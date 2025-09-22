@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RxReporting - Medical Data Analytics Platform</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1><i class="fas fa-chart-line"></i> RxReporting Platform</h1>
+                <div class="header-actions">
+                    <button id="uploadBtn" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Upload Files
+                    </button>
+                    <input type="file" id="fileInput" accept=".xlsx,.xls,.json" multiple style="display: none;">
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Upload Section -->
+            <section id="uploadSection" class="upload-section">
+                <div class="upload-container">
+                    <div class="upload-icon">
+                        <i class="fas fa-file-excel"></i>
+                    </div>
+                    <h2>Upload Medical Data</h2>
+                    <p>Upload your Excel file to start analyzing medical data and generating reports</p>
+                    <button id="uploadBtnMain" class="btn btn-primary btn-large">
+                        <i class="fas fa-upload"></i> Choose Files
+                    </button>
+                    <p class="file-info">Supported formats: .xlsx, .xls, .json<br><small><em>You can select multiple files at once</em></small></p>
+                </div>
+            </section>
+
+            <!-- Dashboard Section -->
+            <section id="dashboardSection" class="dashboard-section" style="display: none;">
+                <!-- Summary Cards -->
+                <div class="summary-cards">
+                    <div class="card">
+                        <div class="card-icon">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Total Members</h3>
+                            <div class="card-value" id="totalMembers">0</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">
+                            <i class="fas fa-stethoscope"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Disease Protocols</h3>
+                            <div class="card-value" id="totalProtocols">0</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>High Risk Cases</h3>
+                            <div class="card-value" id="highRiskCases">0</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">
+                            <i class="fas fa-calendar"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Last Updated</h3>
+                            <div class="card-value" id="lastUpdated">Never</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">
+                            <i class="fas fa-user-check" style="color: #28a745;"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Active Members</h3>
+                            <div class="card-value" id="activeMembers">0</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon">
+                            <i class="fas fa-user-times" style="color: #dc3545;"></i>
+                        </div>
+                        <div class="card-content">
+                            <h3>Inactive Members</h3>
+                            <div class="card-value" id="inactiveMembers">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Section -->
+                <div class="charts-section">
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Disease Distribution</h3>
+                            <div class="chart-controls">
+                                <select id="diseaseChartType">
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="doughnut">Doughnut Chart</option>
+                                    <option value="bar">Bar Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('diseaseChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="diseaseChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Risk Rating Distribution</h3>
+                            <div class="chart-controls">
+                                <select id="riskChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="line">Line Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('riskChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="riskChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>People per Condition</h3>
+                            <div class="chart-controls">
+                                <select id="peoplePerConditionChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="doughnut">Doughnut Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('peoplePerConditionChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="peoplePerConditionChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Risk Rating Breakdown</h3>
+                            <div class="chart-controls">
+                                <select id="riskBreakdownChartType">
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="doughnut">Doughnut Chart</option>
+                                    <option value="bar">Bar Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('riskBreakdownChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="riskBreakdownChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Calculation Types per Risk Rating</h3>
+                            <div class="chart-controls">
+                                <select id="calculationTypeChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="line">Line Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('calculationTypeChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="calculationTypeChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Calculation Types per Disease</h3>
+                            <div class="chart-controls">
+                                <select id="calculationTypePerDiseaseChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="line">Line Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('calculationTypePerDiseaseChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="calculationTypePerDiseaseChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Records Over Time</h3>
+                            <div class="chart-controls">
+                                <select id="recordsOverTimeChartType">
+                                    <option value="line">Line Chart</option>
+                                    <option value="bar">Bar Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('recordsOverTimeChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="recordsOverTimeChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Most Common Calculation Types</h3>
+                            <div class="chart-controls">
+                                <select id="commonCalcTypesChartType">
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="doughnut">Doughnut Chart</option>
+                                    <option value="bar">Bar Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('commonCalcTypesChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="commonCalcTypesChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Disease Co-occurrence</h3>
+                            <div class="chart-controls">
+                                <select id="diseaseCooccurrenceChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('diseaseCooccurrenceChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="diseaseCooccurrenceChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Risk by Calculation Type</h3>
+                            <div class="chart-controls">
+                                <select id="riskByCalcTypeChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="line">Line Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('riskByCalcTypeChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="riskByCalcTypeChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Protocol Usage Frequency</h3>
+                            <div class="chart-controls">
+                                <select id="protocolUsageChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('protocolUsageChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="protocolUsageChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>High Risk Patient Analysis</h3>
+                            <div class="chart-controls">
+                                <select id="highRiskAnalysisChartType">
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="bar">Bar Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('highRiskAnalysisChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="highRiskAnalysisChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Data Entry Patterns</h3>
+                            <div class="chart-controls">
+                                <select id="dataEntryPatternsChartType">
+                                    <option value="line">Line Chart</option>
+                                    <option value="bar">Bar Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('dataEntryPatternsChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="dataEntryPatternsChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Risk Trend Analysis</h3>
+                            <div class="chart-controls">
+                                <select id="riskTrendChartType">
+                                    <option value="line">Line Chart</option>
+                                    <option value="bar">Bar Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('riskTrendChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="riskTrendChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Calculation Method Effectiveness</h3>
+                            <div class="chart-controls">
+                                <select id="calcMethodEffectivenessChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('calcMethodEffectivenessChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="calcMethodEffectivenessChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Disease Severity Patterns</h3>
+                            <div class="chart-controls">
+                                <select id="diseaseSeverityChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="line">Line Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('diseaseSeverityChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="diseaseSeverityChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Risk Rating per Protocol</h3>
+                            <div class="chart-controls">
+                                <select id="riskPerProtocolChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="line">Line Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('riskPerProtocolChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="riskPerProtocolChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Data Table Section -->
+                <div class="data-section">
+                    <div class="data-header">
+                        <h3>Medical Data Records</h3>
+                        <div class="data-controls">
+                            <input type="text" id="searchInput" placeholder="Search records...">
+                            <select id="filterDisease">
+                                <option value="">All Diseases</option>
+                            </select>
+                            <select id="filterRisk">
+                                <option value="">All Risk Levels</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="dataTable">
+                            <thead>
+                                <tr>
+                                    <th>Member Number</th>
+                                    <th>Dependent Code</th>
+                                    <th>Disease Protocol</th>
+                                    <th>Risk Rating</th>
+                                    <th>Risk Type</th>
+                                    <th>Status</th>
+                                    <th>Date Calculated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dataTableBody">
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination">
+                        <button id="prevPage" class="btn btn-secondary">Previous</button>
+                        <span id="pageInfo">Page 1 of 1</span>
+                        <button id="nextPage" class="btn btn-secondary">Next</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Drill Down Modal -->
+    <div id="drillDownModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Record Details</h3>
+                <button id="closeModal" class="btn btn-secondary">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Drill down content will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Fullscreen Chart Modal -->
+    <div id="fullscreenModal" class="fullscreen-modal" style="display: none;">
+        <div class="fullscreen-modal-content">
+            <div class="fullscreen-modal-header">
+                <h3 id="fullscreenModalTitle" class="fullscreen-modal-title">Chart Fullscreen</h3>
+                <div class="fullscreen-modal-controls" id="fullscreenModalControls">
+                    <button class="btn btn-secondary" onclick="app.toggleFullscreen('')">
+                        <i class="fas fa-compress"></i> Exit Fullscreen
+                    </button>
+                </div>
+            </div>
+            <div class="fullscreen-modal-body">
+                <div class="fullscreen-chart-container">
+                    <canvas id="fullscreenModalCanvas" class="fullscreen-chart-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Context Menu -->
+    <div id="chartContextMenu" class="chart-context-menu">
+        <div class="context-menu-item" onclick="app.drillDownFromChart('viewDetails')">
+            <i class="fas fa-eye"></i>
+            View Details
+        </div>
+        <div class="context-menu-item" onclick="app.drillDownFromChart('filterData')">
+            <i class="fas fa-filter"></i>
+            Filter by This Item
+        </div>
+        <div class="context-menu-item" onclick="app.drillDownFromChart('exportData')">
+            <i class="fas fa-download"></i>
+            Export Data
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" onclick="app.drillDownFromChart('relatedRecords')">
+            <i class="fas fa-link"></i>
+            Show Related Records
+        </div>
+        <div class="context-menu-item" onclick="app.drillDownFromChart('compareTrends')">
+            <i class="fas fa-chart-line"></i>
+            Compare Trends
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
