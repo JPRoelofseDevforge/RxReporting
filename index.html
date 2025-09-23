@@ -111,29 +111,11 @@
                     </div>
                     <div class="card">
                         <div class="card-icon">
-                            <i class="fas fa-calendar"></i>
-                        </div>
-                        <div class="card-content">
-                            <h3>Last Updated</h3>
-                            <div class="card-value" id="lastUpdated">Never</div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-icon">
                             <i class="fas fa-user-check" style="color: #28a745;"></i>
                         </div>
                         <div class="card-content">
                             <h3>Active Members</h3>
                             <div class="card-value" id="activeMembers">0</div>
-                        </div>
-                    </div>
-                    <div class="card">
-                        <div class="card-icon">
-                            <i class="fas fa-user-times" style="color: #dc3545;"></i>
-                        </div>
-                        <div class="card-content">
-                            <h3>Inactive Members</h3>
-                            <div class="card-value" id="inactiveMembers">0</div>
                         </div>
                     </div>
                 </div>
@@ -171,22 +153,6 @@
                             </div>
                         </div>
                         <canvas id="riskChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-header">
-                            <h3>People per Condition</h3>
-                            <div class="chart-controls">
-                                <select id="peoplePerConditionChartType">
-                                    <option value="bar">Bar Chart</option>
-                                    <option value="pie">Pie Chart</option>
-                                    <option value="doughnut">Doughnut Chart</option>
-                                </select>
-                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('peoplePerConditionChart')">
-                                    <i class="fas fa-expand"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <canvas id="peoplePerConditionChart"></canvas>
                     </div>
                     <div class="chart-container">
                         <div class="chart-header">
@@ -238,37 +204,6 @@
                     </div>
                     <div class="chart-container">
                         <div class="chart-header">
-                            <h3>Records Over Time</h3>
-                            <div class="chart-controls">
-                                <select id="recordsOverTimeChartType">
-                                    <option value="line">Line Chart</option>
-                                    <option value="bar">Bar Chart</option>
-                                </select>
-                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('recordsOverTimeChart')">
-                                    <i class="fas fa-expand"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <canvas id="recordsOverTimeChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-header">
-                            <h3>Most Common Calculation Types</h3>
-                            <div class="chart-controls">
-                                <select id="commonCalcTypesChartType">
-                                    <option value="pie">Pie Chart</option>
-                                    <option value="doughnut">Doughnut Chart</option>
-                                    <option value="bar">Bar Chart</option>
-                                </select>
-                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('commonCalcTypesChart')">
-                                    <i class="fas fa-expand"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <canvas id="commonCalcTypesChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-header">
                             <h3>Disease Co-occurrence</h3>
                             <div class="chart-controls">
                                 <select id="diseaseCooccurrenceChartType">
@@ -311,66 +246,6 @@
                             </div>
                         </div>
                         <canvas id="protocolUsageChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-header">
-                            <h3>High Risk Patient Analysis</h3>
-                            <div class="chart-controls">
-                                <select id="highRiskAnalysisChartType">
-                                    <option value="pie">Pie Chart</option>
-                                    <option value="bar">Bar Chart</option>
-                                </select>
-                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('highRiskAnalysisChart')">
-                                    <i class="fas fa-expand"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <canvas id="highRiskAnalysisChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-header">
-                            <h3>Data Entry Patterns</h3>
-                            <div class="chart-controls">
-                                <select id="dataEntryPatternsChartType">
-                                    <option value="line">Line Chart</option>
-                                    <option value="bar">Bar Chart</option>
-                                </select>
-                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('dataEntryPatternsChart')">
-                                    <i class="fas fa-expand"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <canvas id="dataEntryPatternsChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-header">
-                            <h3>Risk Trend Analysis</h3>
-                            <div class="chart-controls">
-                                <select id="riskTrendChartType">
-                                    <option value="line">Line Chart</option>
-                                    <option value="bar">Bar Chart</option>
-                                </select>
-                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('riskTrendChart')">
-                                    <i class="fas fa-expand"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <canvas id="riskTrendChart"></canvas>
-                    </div>
-                    <div class="chart-container">
-                        <div class="chart-header">
-                            <h3>Calculation Method Effectiveness</h3>
-                            <div class="chart-controls">
-                                <select id="calcMethodEffectivenessChartType">
-                                    <option value="bar">Bar Chart</option>
-                                    <option value="pie">Pie Chart</option>
-                                </select>
-                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('calcMethodEffectivenessChart')">
-                                    <i class="fas fa-expand"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <canvas id="calcMethodEffectivenessChart"></canvas>
                     </div>
                     <div class="chart-container">
                         <div class="chart-header">

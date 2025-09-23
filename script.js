@@ -26,30 +26,50 @@ class RxReportingApp {
         this.sampleOption = document.getElementById('sampleOption');
         this.fileInfo = document.getElementById('fileInfo');
 
-        // Summary cards
+        // Summary cards - with null checks
         this.totalMembers = document.getElementById('totalMembers');
         this.totalProtocols = document.getElementById('totalProtocols');
         this.highRiskCases = document.getElementById('highRiskCases');
-        this.lastUpdated = document.getElementById('lastUpdated');
+        // Note: lastUpdated element was removed from HTML, so we don't initialize it here
 
-        // Charts
-        this.diseaseChart = document.getElementById('diseaseChart').getContext('2d');
-        this.riskChart = document.getElementById('riskChart').getContext('2d');
-        this.peoplePerConditionChart = document.getElementById('peoplePerConditionChart').getContext('2d');
-        this.riskBreakdownChart = document.getElementById('riskBreakdownChart').getContext('2d');
-        this.calculationTypeChart = document.getElementById('calculationTypeChart').getContext('2d');
-        this.calculationTypePerDiseaseChart = document.getElementById('calculationTypePerDiseaseChart').getContext('2d');
-        this.recordsOverTimeChart = document.getElementById('recordsOverTimeChart').getContext('2d');
-        this.commonCalcTypesChart = document.getElementById('commonCalcTypesChart').getContext('2d');
-        this.diseaseCooccurrenceChart = document.getElementById('diseaseCooccurrenceChart').getContext('2d');
-        this.riskByCalcTypeChart = document.getElementById('riskByCalcTypeChart').getContext('2d');
-        this.protocolUsageChart = document.getElementById('protocolUsageChart').getContext('2d');
-        this.highRiskAnalysisChart = document.getElementById('highRiskAnalysisChart').getContext('2d');
-        this.dataEntryPatternsChart = document.getElementById('dataEntryPatternsChart').getContext('2d');
-        this.riskTrendChart = document.getElementById('riskTrendChart').getContext('2d');
-        this.calcMethodEffectivenessChart = document.getElementById('calcMethodEffectivenessChart').getContext('2d');
-        this.diseaseSeverityChart = document.getElementById('diseaseSeverityChart').getContext('2d');
-        this.riskPerProtocolChart = document.getElementById('riskPerProtocolChart').getContext('2d');
+        // Charts - with null checks and logging
+        console.log('DEBUG: Checking canvas elements...');
+
+        // Helper function to safely get canvas context
+        const getCanvasContext = (id) => {
+            const element = document.getElementById(id);
+            if (!element) {
+                console.warn(`DEBUG: Canvas element '${id}' not found in DOM`);
+                return null;
+            }
+            console.log(`DEBUG: Canvas element '${id}' found, getting context...`);
+            try {
+                return element.getContext('2d');
+            } catch (error) {
+                console.error(`DEBUG: Error getting context for '${id}':`, error);
+                return null;
+            }
+        };
+
+        this.diseaseChart = getCanvasContext('diseaseChart');
+        this.riskChart = getCanvasContext('riskChart');
+        this.peoplePerConditionChart = getCanvasContext('peoplePerConditionChart');
+        this.riskBreakdownChart = getCanvasContext('riskBreakdownChart');
+        this.calculationTypeChart = getCanvasContext('calculationTypeChart');
+        this.calculationTypePerDiseaseChart = getCanvasContext('calculationTypePerDiseaseChart');
+        this.recordsOverTimeChart = getCanvasContext('recordsOverTimeChart');
+        this.commonCalcTypesChart = getCanvasContext('commonCalcTypesChart');
+        this.diseaseCooccurrenceChart = getCanvasContext('diseaseCooccurrenceChart');
+        this.riskByCalcTypeChart = getCanvasContext('riskByCalcTypeChart');
+        this.protocolUsageChart = getCanvasContext('protocolUsageChart');
+        this.highRiskAnalysisChart = getCanvasContext('highRiskAnalysisChart');
+        this.dataEntryPatternsChart = getCanvasContext('dataEntryPatternsChart');
+        this.riskTrendChart = getCanvasContext('riskTrendChart');
+        this.calcMethodEffectivenessChart = getCanvasContext('calcMethodEffectivenessChart');
+        this.diseaseSeverityChart = getCanvasContext('diseaseSeverityChart');
+        this.riskPerProtocolChart = getCanvasContext('riskPerProtocolChart');
+
+        console.log('DEBUG: Canvas element initialization complete');
 
         // Data table
         this.dataTableBody = document.getElementById('dataTableBody');
@@ -70,36 +90,39 @@ class RxReportingApp {
     }
 
     bindEvents() {
-        // File upload events
-        this.uploadBtn.addEventListener('click', () => this.fileInput.click());
-        this.uploadBtnMain.addEventListener('click', () => this.fileInput.click());
-        this.fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
+        // File upload events - only bind if elements exist
+        if (this.uploadBtn) this.uploadBtn.addEventListener('click', () => this.fileInput.click());
+        if (this.uploadBtnMain) this.uploadBtnMain.addEventListener('click', () => this.fileInput.click());
+        if (this.fileInput) this.fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
 
         // Sample data events
-        this.loadSampleBtn.addEventListener('click', () => this.loadSampleData());
+        if (this.loadSampleBtn) this.loadSampleBtn.addEventListener('click', () => this.loadSampleData());
 
         // Data source selection events
-        this.uploadOption.addEventListener('change', () => this.updateDataSourceDisplay());
-        this.sampleOption.addEventListener('change', () => this.updateDataSourceDisplay());
+        if (this.uploadOption) this.uploadOption.addEventListener('change', () => this.updateDataSourceDisplay());
+        if (this.sampleOption) this.sampleOption.addEventListener('change', () => this.updateDataSourceDisplay());
 
-        // Chart type changes
-        document.getElementById('diseaseChartType').addEventListener('change', (e) => this.updateDiseaseChart(e.target.value));
-        document.getElementById('riskChartType').addEventListener('change', (e) => this.updateRiskChart(e.target.value));
-        document.getElementById('peoplePerConditionChartType').addEventListener('change', (e) => this.updatePeoplePerConditionChart(e.target.value));
-        document.getElementById('riskBreakdownChartType').addEventListener('change', (e) => this.updateRiskBreakdownChart(e.target.value));
-        document.getElementById('calculationTypeChartType').addEventListener('change', (e) => this.updateCalculationTypeChart(e.target.value));
-        document.getElementById('calculationTypePerDiseaseChartType').addEventListener('change', (e) => this.updateCalculationTypePerDiseaseChart(e.target.value));
-        document.getElementById('recordsOverTimeChartType').addEventListener('change', (e) => this.updateRecordsOverTimeChart(e.target.value));
-        document.getElementById('commonCalcTypesChartType').addEventListener('change', (e) => this.updateCommonCalcTypesChart(e.target.value));
-        document.getElementById('diseaseCooccurrenceChartType').addEventListener('change', (e) => this.updateDiseaseCooccurrenceChart(e.target.value));
-        document.getElementById('riskByCalcTypeChartType').addEventListener('change', (e) => this.updateRiskByCalcTypeChart(e.target.value));
-        document.getElementById('protocolUsageChartType').addEventListener('change', (e) => this.updateProtocolUsageChart(e.target.value));
-        document.getElementById('highRiskAnalysisChartType').addEventListener('change', (e) => this.updateHighRiskAnalysisChart(e.target.value));
-        document.getElementById('dataEntryPatternsChartType').addEventListener('change', (e) => this.updateDataEntryPatternsChart(e.target.value));
-        document.getElementById('riskTrendChartType').addEventListener('change', (e) => this.updateRiskTrendChart(e.target.value));
-        document.getElementById('calcMethodEffectivenessChartType').addEventListener('change', (e) => this.updateCalcMethodEffectivenessChart(e.target.value));
-        document.getElementById('diseaseSeverityChartType').addEventListener('change', (e) => this.updateDiseaseSeverityChart(e.target.value));
-        document.getElementById('riskPerProtocolChartType').addEventListener('change', (e) => this.updateRiskPerProtocolChart(e.target.value));
+        // Chart type changes - only bind for existing chart types
+        const chartTypeElements = [
+            'diseaseChartType', 'riskChartType', 'peoplePerConditionChartType', 'riskBreakdownChartType',
+            'calculationTypeChartType', 'calculationTypePerDiseaseChartType', 'recordsOverTimeChartType',
+            'commonCalcTypesChartType', 'diseaseCooccurrenceChartType', 'riskByCalcTypeChartType',
+            'protocolUsageChartType', 'highRiskAnalysisChartType', 'dataEntryPatternsChartType',
+            'riskTrendChartType', 'calcMethodEffectivenessChartType', 'diseaseSeverityChartType',
+            'riskPerProtocolChartType'
+        ];
+
+        chartTypeElements.forEach(chartTypeId => {
+            const element = document.getElementById(chartTypeId);
+            if (element) {
+                element.addEventListener('change', (e) => {
+                    const methodName = `update${chartTypeId.replace('ChartType', 'Chart')}`;
+                    if (this[methodName]) {
+                        this[methodName](e.target.value);
+                    }
+                });
+            }
+        });
 
         // Search and filter events
         this.searchInput.addEventListener('input', () => this.applyFilters());
@@ -285,8 +308,9 @@ class RxReportingApp {
 
     saveDataToStorage() {
         try {
-            const dataString = JSON.stringify(this.data);
-            localStorage.setItem('rxReportingData', dataString);
+            // Compress data before saving to reduce storage size
+            const compressedData = this.compressData(this.data);
+            localStorage.setItem('rxReportingData', compressedData);
             localStorage.setItem('rxReportingLastUpdated', new Date().toISOString());
         } catch (error) {
             console.error('Error saving to localStorage:', error);
@@ -360,14 +384,80 @@ class RxReportingApp {
         }
     }
 
+    compressData(data) {
+        try {
+            // Simple compression by removing redundant fields and using shorter keys
+            const compressed = data.map(row => {
+                const compressedRow = {
+                    mn: row.MemberNumber,           // MemberNumber -> mn
+                    dc: row.DependentCode,          // DependentCode -> dc
+                    dpn: row.DiseaseProtocolName,   // DiseaseProtocolName -> dpn
+                    rrn: row.RiskRatingName,        // RiskRatingName -> rrn
+                    rctn: row.RiskCalculationTypeName, // RiskCalculationTypeName -> rctn
+                    dt: row.DateCalculated,         // DateCalculated -> dt
+                    md: row.MemberDependant,        // MemberDependant -> md
+                    ia: row.isActive,               // isActive -> ia
+                    asr: row.activeStatusReason,    // activeStatusReason -> asr
+                    ass: row.activeStatusSource     // activeStatusSource -> ass
+                };
+                return compressedRow;
+            });
+
+            const jsonString = JSON.stringify(compressed);
+            console.log(`Data compression: ${JSON.stringify(data).length} -> ${jsonString.length} bytes (${((jsonString.length / JSON.stringify(data).length) * 100).toFixed(1)}%)`);
+
+            return jsonString;
+        } catch (error) {
+            console.error('Error compressing data:', error);
+            // Fallback to original data if compression fails
+            return JSON.stringify(data);
+        }
+    }
+
+    decompressData(compressedString) {
+        try {
+            const compressed = JSON.parse(compressedString);
+            const decompressed = compressed.map(row => ({
+                MemberNumber: row.mn,
+                DependentCode: row.dc,
+                DiseaseProtocolName: row.dpn,
+                RiskRatingName: row.rrn,
+                RiskCalculationTypeName: row.rctn,
+                DateCalculated: row.dt,
+                MemberDependant: row.md,
+                isActive: row.ia,
+                activeStatusReason: row.asr,
+                activeStatusSource: row.ass
+            }));
+
+            return decompressed;
+        } catch (error) {
+            console.error('Error decompressing data:', error);
+            // Try to parse as original format if decompression fails
+            try {
+                return JSON.parse(compressedString);
+            } catch (fallbackError) {
+                console.error('Error parsing as original format:', fallbackError);
+                return [];
+            }
+        }
+    }
+
     loadStoredData() {
         try {
             const storedData = localStorage.getItem('rxReportingData');
             const lastUpdated = localStorage.getItem('rxReportingLastUpdated');
 
             if (storedData) {
-                this.data = JSON.parse(storedData);
-                this.lastUpdated.textContent = lastUpdated ? new Date(lastUpdated).toLocaleString() : 'Unknown';
+                // Try to decompress data, fallback to direct parsing if needed
+                this.data = this.decompressData(storedData);
+
+                // Update lastUpdated if element exists (was removed from HTML)
+                const lastUpdatedEl = document.getElementById('lastUpdated');
+                if (lastUpdatedEl) {
+                    lastUpdatedEl.textContent = lastUpdated ? new Date(lastUpdated).toLocaleString() : 'Unknown';
+                }
+
                 this.initializeDashboard();
             }
         } catch (error) {
@@ -466,9 +556,16 @@ class RxReportingApp {
             }
         });
 
-        this.totalMembers.textContent = uniquePeople.size.toLocaleString();
-        this.totalProtocols.textContent = uniqueProtocols.size.toLocaleString();
-        this.highRiskCases.textContent = highRiskPeople.size.toLocaleString();
+        // Update DOM elements with null checks
+        if (this.totalMembers) {
+            this.totalMembers.textContent = uniquePeople.size.toLocaleString();
+        }
+        if (this.totalProtocols) {
+            this.totalProtocols.textContent = uniqueProtocols.size.toLocaleString();
+        }
+        if (this.highRiskCases) {
+            this.highRiskCases.textContent = highRiskPeople.size.toLocaleString();
+        }
 
         // Update active/inactive counts if elements exist
         const activeMembersEl = document.getElementById('activeMembers');
@@ -481,7 +578,11 @@ class RxReportingApp {
             inactiveMembersEl.textContent = inactivePeople.size.toLocaleString();
         }
 
-        this.lastUpdated.textContent = new Date().toLocaleString();
+        // Update lastUpdated if element exists (was removed from HTML)
+        const lastUpdatedEl = document.getElementById('lastUpdated');
+        if (lastUpdatedEl) {
+            lastUpdatedEl.textContent = new Date().toLocaleString();
+        }
     }
 
     populateFilters() {
@@ -593,23 +694,24 @@ class RxReportingApp {
     }
 
     initializeCharts() {
-        this.createDiseaseChart();
-        this.createRiskChart();
-        this.createPeoplePerConditionChart();
-        this.createRiskBreakdownChart();
-        this.createCalculationTypeChart();
-        this.createCalculationTypePerDiseaseChart();
-        this.createRecordsOverTimeChart();
-        this.createCommonCalcTypesChart();
-        this.createDiseaseCooccurrenceChart();
-        this.createRiskByCalcTypeChart();
-        this.createProtocolUsageChart();
-        this.createHighRiskAnalysisChart();
-        this.createDataEntryPatternsChart();
-        this.createRiskTrendChart();
-        this.createCalcMethodEffectivenessChart();
-        this.createDiseaseSeverityChart();
-        this.createRiskPerProtocolChart();
+        // Only create charts for canvas elements that exist
+        if (this.diseaseChart) this.createDiseaseChart();
+        if (this.riskChart) this.createRiskChart();
+        if (this.peoplePerConditionChart) this.createPeoplePerConditionChart();
+        if (this.riskBreakdownChart) this.createRiskBreakdownChart();
+        if (this.calculationTypeChart) this.createCalculationTypeChart();
+        if (this.calculationTypePerDiseaseChart) this.createCalculationTypePerDiseaseChart();
+        if (this.recordsOverTimeChart) this.createRecordsOverTimeChart();
+        if (this.commonCalcTypesChart) this.createCommonCalcTypesChart();
+        if (this.diseaseCooccurrenceChart) this.createDiseaseCooccurrenceChart();
+        if (this.riskByCalcTypeChart) this.createRiskByCalcTypeChart();
+        if (this.protocolUsageChart) this.createProtocolUsageChart();
+        if (this.highRiskAnalysisChart) this.createHighRiskAnalysisChart();
+        if (this.dataEntryPatternsChart) this.createDataEntryPatternsChart();
+        if (this.riskTrendChart) this.createRiskTrendChart();
+        if (this.calcMethodEffectivenessChart) this.createCalcMethodEffectivenessChart();
+        if (this.diseaseSeverityChart) this.createDiseaseSeverityChart();
+        if (this.riskPerProtocolChart) this.createRiskPerProtocolChart();
     }
 
     createDiseaseChart(type = 'pie') {
@@ -892,24 +994,24 @@ class RxReportingApp {
     }
 
     updateAllCharts() {
-        // Update all charts with current data
-        this.createDiseaseChart(document.getElementById('diseaseChartType').value);
-        this.createRiskChart(document.getElementById('riskChartType').value);
-        this.createPeoplePerConditionChart(document.getElementById('peoplePerConditionChartType').value);
-        this.createRiskBreakdownChart(document.getElementById('riskBreakdownChartType').value);
-        this.createCalculationTypeChart(document.getElementById('calculationTypeChartType').value);
-        this.createCalculationTypePerDiseaseChart(document.getElementById('calculationTypePerDiseaseChartType').value);
-        this.createRecordsOverTimeChart(document.getElementById('recordsOverTimeChartType').value);
-        this.createCommonCalcTypesChart(document.getElementById('commonCalcTypesChartType').value);
-        this.createDiseaseCooccurrenceChart(document.getElementById('diseaseCooccurrenceChartType').value);
-        this.createRiskByCalcTypeChart(document.getElementById('riskByCalcTypeChartType').value);
-        this.createProtocolUsageChart(document.getElementById('protocolUsageChartType').value);
-        this.createHighRiskAnalysisChart(document.getElementById('highRiskAnalysisChartType').value);
-        this.createDataEntryPatternsChart(document.getElementById('dataEntryPatternsChartType').value);
-        this.createRiskTrendChart(document.getElementById('riskTrendChartType').value);
-        this.createCalcMethodEffectivenessChart(document.getElementById('calcMethodEffectivenessChartType').value);
-        this.createDiseaseSeverityChart(document.getElementById('diseaseSeverityChartType').value);
-        this.createRiskPerProtocolChart(document.getElementById('riskPerProtocolChartType').value);
+        // Update all charts with current data - only for existing charts
+        if (this.diseaseChart) this.createDiseaseChart(document.getElementById('diseaseChartType')?.value);
+        if (this.riskChart) this.createRiskChart(document.getElementById('riskChartType')?.value);
+        if (this.peoplePerConditionChart) this.createPeoplePerConditionChart(document.getElementById('peoplePerConditionChartType')?.value);
+        if (this.riskBreakdownChart) this.createRiskBreakdownChart(document.getElementById('riskBreakdownChartType')?.value);
+        if (this.calculationTypeChart) this.createCalculationTypeChart(document.getElementById('calculationTypeChartType')?.value);
+        if (this.calculationTypePerDiseaseChart) this.createCalculationTypePerDiseaseChart(document.getElementById('calculationTypePerDiseaseChartType')?.value);
+        if (this.recordsOverTimeChart) this.createRecordsOverTimeChart(document.getElementById('recordsOverTimeChartType')?.value);
+        if (this.commonCalcTypesChart) this.createCommonCalcTypesChart(document.getElementById('commonCalcTypesChartType')?.value);
+        if (this.diseaseCooccurrenceChart) this.createDiseaseCooccurrenceChart(document.getElementById('diseaseCooccurrenceChartType')?.value);
+        if (this.riskByCalcTypeChart) this.createRiskByCalcTypeChart(document.getElementById('riskByCalcTypeChartType')?.value);
+        if (this.protocolUsageChart) this.createProtocolUsageChart(document.getElementById('protocolUsageChartType')?.value);
+        if (this.highRiskAnalysisChart) this.createHighRiskAnalysisChart(document.getElementById('highRiskAnalysisChartType')?.value);
+        if (this.dataEntryPatternsChart) this.createDataEntryPatternsChart(document.getElementById('dataEntryPatternsChartType')?.value);
+        if (this.riskTrendChart) this.createRiskTrendChart(document.getElementById('riskTrendChartType')?.value);
+        if (this.calcMethodEffectivenessChart) this.createCalcMethodEffectivenessChart(document.getElementById('calcMethodEffectivenessChartType')?.value);
+        if (this.diseaseSeverityChart) this.createDiseaseSeverityChart(document.getElementById('diseaseSeverityChartType')?.value);
+        if (this.riskPerProtocolChart) this.createRiskPerProtocolChart(document.getElementById('riskPerProtocolChartType')?.value);
     }
 
     getDiseaseDistribution() {
@@ -1877,7 +1979,7 @@ class RxReportingApp {
 
         chartIds.forEach(chartId => {
             const canvas = document.getElementById(chartId);
-            if (canvas) {
+            if (canvas && this[chartId]) { // Only add context menu if canvas exists and context is not null
                 canvas.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
                     this.showChartContextMenu(e, chartId);
