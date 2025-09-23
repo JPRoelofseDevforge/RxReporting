@@ -333,6 +333,19 @@ body {
     margin-bottom: 2rem;
 }
 
+/* Responsive adjustments for more charts */
+@media (max-width: 1200px) {
+    .charts-section {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Full-width chart spans entire row */
+.full-width-chart {
+    grid-column: 1 / -1;
+    height: 600px;
+}
+
 .chart-container {
     background: white;
     padding: 1.5rem;
@@ -366,6 +379,68 @@ body {
 .chart-container canvas {
     flex: 1;
     max-height: 400px;
+}
+
+/* High Risk Section */
+.high-risk-section {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 2rem;
+    border-left: 4px solid #dc3545;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, #fff5f5 0%, #ffeaea 100%);
+    border-bottom: 1px solid #fed7d7;
+}
+
+.section-header h3 {
+    color: #c53030;
+    font-size: 1.3rem;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.section-header h3::before {
+    content: '🚨';
+    font-size: 1.2rem;
+}
+
+.section-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.section-controls select {
+    padding: 0.5rem;
+    border: 1px solid #fed7d7;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: white;
+}
+
+.section-controls select:focus {
+    outline: none;
+    border-color: #dc3545;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+}
+
+.table-summary {
+    padding: 1rem 1.5rem;
+    background: #f8f9fa;
+    border-top: 1px solid #dee2e6;
+    font-size: 0.9rem;
+    color: #666;
+    text-align: center;
 }
 
 /* Data Section */
@@ -690,6 +765,31 @@ tbody tr.selected {
     gap: 1.5rem;
 }
 
+/* High Risk Drill Down Specific Styles */
+.priority-indicator {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: linear-gradient(135deg, #fff5f5 0%, #fed7d7 100%);
+    border-radius: 8px;
+    border: 1px solid #feb2b2;
+}
+
+.disease-list {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.calculation-methods {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #f3e5f5;
+    border-radius: 8px;
+    border: 1px solid #ce93d8;
+}
+
 .drill-down-section {
     background: #f8f9fa;
     padding: 1rem;
@@ -705,6 +805,147 @@ tbody tr.selected {
 .drill-down-section p {
     color: #666;
     font-size: 0.9rem;
+}
+
+/* High Risk Table Styles */
+#highRiskTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+#highRiskTable th {
+    background: linear-gradient(135deg, #fed7d7 0%, #feb2b2 100%);
+    color: #c53030;
+    font-weight: 600;
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 2px solid #e53e3e;
+    position: sticky;
+    top: 0;
+}
+
+#highRiskTable td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #fed7d7;
+    vertical-align: top;
+}
+
+#highRiskTable tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+#highRiskTable tbody tr:hover {
+    background-color: #fff5f5;
+}
+
+#highRiskTable tbody tr:nth-child(even) {
+    background-color: #fefefe;
+}
+
+#highRiskTable tbody tr:nth-child(even):hover {
+    background-color: #fff5f5;
+}
+
+/* Priority Rank Styling */
+.priority-high {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-align: center;
+    min-width: 60px;
+    display: inline-block;
+}
+
+.priority-medium {
+    background: linear-gradient(135deg, #ffa726 0%, #fb8c00 100%);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-align: center;
+    min-width: 60px;
+    display: inline-block;
+}
+
+.priority-low {
+    background: linear-gradient(135deg, #66bb6a 0%, #388e3c 100%);
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-align: center;
+    min-width: 60px;
+    display: inline-block;
+}
+
+/* Risk Level Styling in High Risk Table */
+.risk-level-high {
+    background: #dc3545;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-align: center;
+    display: inline-block;
+}
+
+.risk-level-medium {
+    background: #ffc107;
+    color: #212529;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-align: center;
+    display: inline-block;
+}
+
+.risk-level-low {
+    background: #28a745;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-align: center;
+    display: inline-block;
+}
+
+/* Disease tags in high risk table */
+.disease-tag {
+    display: inline-block;
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 0.2rem 0.4rem;
+    margin: 0.1rem;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    border: 1px solid #bbdefb;
+}
+
+.disease-tag-multiple {
+    background: #fff3e0;
+    color: #e65100;
+    border: 1px solid #ffcc02;
+}
+
+/* Calculation type badges */
+.calc-badge {
+    display: inline-block;
+    background: #f3e5f5;
+    color: #7b1fa2;
+    padding: 0.2rem 0.4rem;
+    margin: 0.1rem;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    border: 1px solid #ce93d8;
 }
 
 /* Responsive Design */
@@ -730,6 +971,17 @@ tbody tr.selected {
     .charts-section {
         grid-template-columns: repeat(2, 1fr);
         gap: 1rem;
+    }
+
+    .section-header {
+        flex-direction: column;
+        gap: 1rem;
+        align-items: stretch;
+    }
+
+    .section-controls {
+        flex-wrap: wrap;
+        justify-content: center;
     }
 
     .data-header {

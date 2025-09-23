@@ -7,6 +7,9 @@ class RxReportingApp {
         this.itemsPerPage = 20;
         this.charts = {};
 
+        // Chart-based filtering properties
+        this.chartFilters = new Map(); // Store active chart-based filters
+        this.chartElementData = null; // Store clicked chart element data
 
         this.initializeElements();
         this.bindEvents();
@@ -109,7 +112,7 @@ class RxReportingApp {
             'commonCalcTypesChartType', 'diseaseCooccurrenceChartType', 'riskByCalcTypeChartType',
             'protocolUsageChartType', 'highRiskAnalysisChartType', 'dataEntryPatternsChartType',
             'riskTrendChartType', 'calcMethodEffectivenessChartType', 'diseaseSeverityChartType',
-            'riskPerProtocolChartType'
+            'riskPerProtocolChartType', 'highRiskDiabetesChartType'
         ];
 
         chartTypeElements.forEach(chartTypeId => {
@@ -465,6 +468,210 @@ class RxReportingApp {
         }
     }
 
+    // Method to handle data updates and maintain chart filters
+    updateDataAndMaintainFilters(newData) {
+        this.data = newData;
+        this.saveDataToStorage();
+
+        // Clear chart filters since the underlying data has changed
+        this.clearAllChartFilters();
+
+        // Reinitialize dashboard with new data
+        this.initializeDashboard();
+    }
+
+    // Test method to verify chart filtering functionality
+    testChartFiltering() {
+        console.log('=== Chart Filtering Test ===');
+        console.log('Active chart filters:', this.chartFilters.size);
+        console.log('Chart element data:', this.chartElementData);
+
+        // Test with sample data if available
+        if (this.data.length > 0) {
+            console.log('Sample data available:', this.data.length, 'records');
+
+            // Test disease filtering
+            const sampleDisease = this.data.find(row => row.DiseaseProtocolName)?.DiseaseProtocolName;
+            if (sampleDisease) {
+                console.log('Testing disease filter:', sampleDisease);
+                const testFilter = {
+                    chartId: 'diseaseChart',
+                    chartType: 'pie',
+                    elementType: 'slice',
+                    elementLabel: sampleDisease,
+                    elementValue: 1,
+                    filterField: 'DiseaseProtocolName',
+                    filterValue: sampleDisease,
+                    description: `Disease: ${sampleDisease}`
+                };
+
+                this.chartFilters.set('diseaseChart', testFilter);
+                this.applyChartFilters();
+                console.log('Filtered data count:', this.filteredData.length);
+            }
+        }
+
+        console.log('=== Test Complete ===');
+    }
+
+    // Test method to verify chart element detection and context menu functionality
+    testChartElementDetection() {
+        console.log('=== Chart Element Detection Test ===');
+
+        // Test each chart type
+        const testCharts = ['diseaseChart', 'riskChart', 'peoplePerConditionChart'];
+
+        testCharts.forEach(chartId => {
+            const chart = this.charts[chartId.replace('Chart', 'Chart')];
+            if (chart && chart.data && chart.data.labels && chart.data.labels.length > 0) {
+                console.log(`Testing ${chartId} (${chart.config.type})`);
+
+                // Simulate click on first element
+                const mockEvent = {
+                    target: chart.canvas,
+                    offsetX: chart.config.type === 'pie' ? 150 : 50,
+                    offsetY: chart.config.type === 'pie' ? 100 : 200
+                };
+
+                // Trigger the click event
+                chart.canvas.dispatchEvent(new MouseEvent('click', mockEvent));
+
+                // Check if element data was captured
+                if (this.chartElementData && this.chartElementData.chartId === chartId) {
+                    console.log(`✅ ${chartId} element detection: PASS`);
+                    console.log(`   Detected: ${this.chartElementData.label} (${this.chartElementData.elementType})`);
+
+                    // Test context menu functionality
+                    this.showChartContextMenu(mockEvent, chartId);
+
+                    const contextMenu = document.getElementById('chartContextMenu');
+                    if (contextMenu && contextMenu.style.display === 'block') {
+                        const elementLabel = contextMenu.getAttribute('data-element-label');
+                        if (elementLabel) {
+                            console.log(`✅ ${chartId} context menu: PASS`);
+                            console.log(`   Context menu data: ${elementLabel}`);
+                        } else {
+                            console.log(`❌ ${chartId} context menu: FAIL - No element data in menu`);
+                        }
+                    } else {
+                        console.log(`❌ ${chartId} context menu: FAIL - Menu not displayed`);
+                    }
+
+                    // Hide context menu
+                    this.hideChartContextMenu();
+                } else {
+                    console.log(`❌ ${chartId} element detection: FAIL - No element data captured`);
+                }
+            } else {
+                console.log(`⚠️ ${chartId}: SKIP - Chart not available or no data`);
+            }
+        });
+
+        console.log('=== Element Detection Test Complete ===');
+    }
+
+    // Test method to verify the right-click element detection fix
+    testRightClickElementDetection() {
+        console.log('=== Right-Click Element Detection Test ===');
+
+        const testCharts = ['diseaseChart', 'riskChart', 'peoplePerConditionChart'];
+
+        testCharts.forEach(chartId => {
+            const chart = this.charts[chartId.replace('Chart', 'Chart')];
+            if (chart && chart.data && chart.data.labels && chart.data.labels.length > 0) {
+                console.log(`\nTesting right-click detection for ${chartId} (${chart.config.type})`);
+
+                // Test multiple positions on the chart
+                const testPositions = [
+                    { x: 100, y: 100, description: 'Center-left' },
+                    { x: 200, y: 150, description: 'Center' },
+                    { x: 150, y: 200, description: 'Bottom-center' }
+                ];
+
+                testPositions.forEach((pos, index) => {
+                    console.log(`  Position ${index + 1} (${pos.description}): ${pos.x}, ${pos.y}`);
+
+                    // Create mock right-click event
+                    const mockEvent = {
+                        target: chart.canvas,
+                        clientX: pos.x + chart.canvas.getBoundingClientRect().left,
+                        clientY: pos.y + chart.canvas.getBoundingClientRect().top,
+                        preventDefault: () => {}
+                    };
+
+                    // Test the element detection
+                    const canvasPosition = {
+                        x: pos.x,
+                        y: pos.y
+                    };
+
+                    const elementData = this.getChartElementDataAtPosition(chart, canvasPosition);
+
+                    if (elementData) {
+                        console.log(`    ✅ SUCCESS: ${elementData.label} (${elementData.elementType})`);
+                    } else {
+                        console.log(`    ❌ FAILED: No element detected`);
+                    }
+                });
+            } else {
+                console.log(`⚠️ ${chartId}: SKIP - Chart not available or no data`);
+            }
+        });
+
+        console.log('\n=== Right-Click Element Detection Test Complete ===');
+    }
+
+    // Debug method to test context menu functionality
+    debugContextMenu(chartId) {
+        console.log('=== Context Menu Debug Test ===');
+
+        if (!chartId) {
+            console.log('No chart ID provided');
+            return;
+        }
+
+        const chart = this.charts[chartId.replace('Chart', 'Chart')];
+        if (!chart) {
+            console.log(`Chart ${chartId} not found`);
+            return;
+        }
+
+        console.log(`Testing context menu for ${chartId} (${chart.config.type})`);
+        console.log('Chart data:', {
+            hasLabels: chart.data.labels?.length > 0,
+            labelCount: chart.data.labels?.length,
+            hasDatasets: chart.data.datasets?.length > 0,
+            datasetCount: chart.data.datasets?.length
+        });
+
+        // Test element detection at center position
+        const centerX = chart.chartArea.left + chart.chartArea.width / 2;
+        const centerY = chart.chartArea.top + chart.chartArea.height / 2;
+
+        const elementData = this.getChartElementDataAtPosition(chart, { x: centerX, y: centerY });
+
+        if (elementData) {
+            console.log('✅ Element detected at center:', elementData);
+
+            // Test context menu creation
+            const mockEvent = {
+                target: chart.canvas,
+                clientX: centerX + chart.canvas.getBoundingClientRect().left,
+                clientY: centerY + chart.canvas.getBoundingClientRect().top,
+                preventDefault: () => {},
+                offsetX: centerX,
+                offsetY: centerY
+            };
+
+            this.showChartContextMenu(mockEvent, chartId);
+            console.log('✅ Context menu should now be visible');
+        } else {
+            console.log('❌ No element detected at center position');
+        }
+
+        console.log('=== Debug Test Complete ===');
+    }
+
 
 
 
@@ -529,6 +736,9 @@ class RxReportingApp {
         this.populateFilters();
         this.applyFilters();
         this.initializeCharts();
+
+        // Clear any existing chart filters when dashboard is reinitialized
+        this.clearAllChartFilters();
     }
 
     updateSummaryCards() {
@@ -540,7 +750,7 @@ class RxReportingApp {
         const inactivePeople = new Set();
 
         this.data.forEach(row => {
-            const personKey = `${row.MemberNumber}-${row.DependentCode}`;
+            const personKey = `${row.MemberNumber}-${row.DependantCode}`;
             const protocol = row.DiseaseProtocolName;
             const risk = row.RiskRatingName;
             const isActive = row.isActive;
@@ -608,23 +818,8 @@ class RxReportingApp {
     }
 
     applyFilters() {
-        const searchTerm = this.searchInput.value.toLowerCase();
-        const diseaseFilter = this.filterDisease.value;
-        const riskFilter = this.filterRisk.value;
-
-        this.filteredData = this.data.filter(row => {
-            const matchesSearch = searchTerm === '' ||
-                Object.values(row).some(value =>
-                    value.toString().toLowerCase().includes(searchTerm)
-                );
-            const matchesDisease = diseaseFilter === '' || row.DiseaseProtocolName === diseaseFilter;
-            const matchesRisk = riskFilter === '' || row.RiskRatingName === riskFilter;
-
-            return matchesSearch && matchesDisease && matchesRisk;
-        });
-
-        this.currentPage = 1;
-        this.renderTable();
+        // Apply chart filters first, then regular filters
+        this.applyChartFilters();
     }
 
     renderTable() {
@@ -712,6 +907,167 @@ class RxReportingApp {
         if (this.calcMethodEffectivenessChart) this.createCalcMethodEffectivenessChart();
         if (this.diseaseSeverityChart) this.createDiseaseSeverityChart();
         if (this.riskPerProtocolChart) this.createRiskPerProtocolChart();
+        if (this.highRiskDiabetesChart) this.createHighRiskDiabetesChart();
+
+        // Add chart event listeners after charts are created
+        this.addChartEventListeners();
+    }
+
+    addChartEventListeners() {
+        // Add event listeners to all existing charts
+        Object.keys(this.charts).forEach(chartKey => {
+            const chart = this.charts[chartKey];
+            if (chart) {
+                this.addChartClickListener(chart, chartKey);
+            }
+        });
+    }
+
+    addChartClickListener(chart, chartKey) {
+        // Add click event listener to detect chart element clicks
+        chart.canvas.addEventListener('click', (event) => {
+            const canvasPosition = Chart.helpers.getRelativePosition(event, chart);
+
+            // Get clicked element based on chart type
+            let elementData = null;
+
+            switch (chart.config.type) {
+                case 'pie':
+                case 'doughnut':
+                    elementData = this.getPieChartElementData(chart, canvasPosition);
+                    break;
+                case 'bar':
+                    elementData = this.getBarChartElementData(chart, canvasPosition);
+                    break;
+                case 'line':
+                    elementData = this.getLineChartElementData(chart, canvasPosition);
+                    break;
+                default:
+                    elementData = this.getGenericChartElementData(chart, canvasPosition);
+            }
+
+            if (elementData) {
+                // Store the element data for context menu use
+                this.chartElementData = {
+                    chartId: chartKey,
+                    chartType: chart.config.type,
+                    ...elementData
+                };
+
+                console.log('Chart element clicked:', this.chartElementData);
+
+                // Show a subtle visual feedback that element was detected
+                this.showElementDetectionFeedback(chart.canvas, elementData);
+            } else {
+                // Clear element data if click didn't hit an element
+                if (this.chartElementData && this.chartElementData.chartId === chartKey) {
+                    this.chartElementData = null;
+                }
+            }
+        });
+    }
+
+    showElementDetectionFeedback(canvas, elementData) {
+        // Add a subtle visual indicator that the element was detected
+        const ctx = canvas.getContext('2d');
+        const originalStrokeStyle = ctx.strokeStyle;
+        const originalLineWidth = ctx.lineWidth;
+
+        // Draw a subtle highlight around the detected element
+        ctx.strokeStyle = 'rgba(0, 123, 255, 0.3)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([5, 5]);
+
+        // The specific highlight logic would depend on the chart type and element
+        // For now, we'll just log that feedback was shown
+        console.log('Element detection feedback shown for:', elementData.label);
+
+        // Reset line dash after a short delay
+        setTimeout(() => {
+            ctx.setLineDash([]);
+            ctx.strokeStyle = originalStrokeStyle;
+            ctx.lineWidth = originalLineWidth;
+        }, 500);
+    }
+
+    getPieChartElementData(chart, position) {
+        const elements = chart.getElementsAtEventForMode(position, 'nearest', { intersect: true }, false);
+
+        if (elements.length > 0) {
+            const element = elements[0];
+            const dataset = chart.data.datasets[element.datasetIndex];
+            const dataIndex = element.index;
+
+            return {
+                label: chart.data.labels[dataIndex],
+                value: dataset.data[dataIndex],
+                index: dataIndex,
+                datasetIndex: element.datasetIndex,
+                elementType: 'slice'
+            };
+        }
+
+        return null;
+    }
+
+    getBarChartElementData(chart, position) {
+        const elements = chart.getElementsAtEventForMode(position, 'nearest', { intersect: true }, false);
+
+        if (elements.length > 0) {
+            const element = elements[0];
+            const dataset = chart.data.datasets[element.datasetIndex];
+            const dataIndex = element.index;
+
+            return {
+                label: chart.data.labels[dataIndex],
+                value: dataset.data[dataIndex],
+                index: dataIndex,
+                datasetIndex: element.datasetIndex,
+                elementType: 'bar'
+            };
+        }
+
+        return null;
+    }
+
+    getLineChartElementData(chart, position) {
+        const elements = chart.getElementsAtEventForMode(position, 'nearest', { intersect: true }, false);
+
+        if (elements.length > 0) {
+            const element = elements[0];
+            const dataset = chart.data.datasets[element.datasetIndex];
+            const dataIndex = element.index;
+
+            return {
+                label: chart.data.labels[dataIndex],
+                value: dataset.data[dataIndex],
+                index: dataIndex,
+                datasetIndex: element.datasetIndex,
+                elementType: 'point'
+            };
+        }
+
+        return null;
+    }
+
+    getGenericChartElementData(chart, position) {
+        const elements = chart.getElementsAtEventForMode(position, 'nearest', { intersect: true }, false);
+
+        if (elements.length > 0) {
+            const element = elements[0];
+            const dataset = chart.data.datasets[element.datasetIndex];
+            const dataIndex = element.index;
+
+            return {
+                label: chart.data.labels[dataIndex] || `Element ${dataIndex}`,
+                value: dataset.data[dataIndex],
+                index: dataIndex,
+                datasetIndex: element.datasetIndex,
+                elementType: 'element'
+            };
+        }
+
+        return null;
     }
 
     createDiseaseChart(type = 'pie') {
@@ -738,10 +1094,14 @@ class RxReportingApp {
 
     updateDiseaseChart(type) {
         this.createDiseaseChart(type);
+        this.addChartEventListeners(); // Re-add event listeners
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     updateRiskChart(type) {
         this.createRiskChart(type);
+        this.addChartEventListeners(); // Re-add event listeners
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     // New chart methods
@@ -780,14 +1140,17 @@ class RxReportingApp {
 
     updatePeoplePerConditionChart(type) {
         this.createPeoplePerConditionChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     updateRiskBreakdownChart(type) {
         this.createRiskBreakdownChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     updateCalculationTypeChart(type) {
         this.createCalculationTypeChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     createCalculationTypePerDiseaseChart(type = 'bar') {
@@ -803,6 +1166,7 @@ class RxReportingApp {
 
     updateCalculationTypePerDiseaseChart(type) {
         this.createCalculationTypePerDiseaseChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     // New chart creation methods
@@ -919,42 +1283,52 @@ class RxReportingApp {
     // Update methods for new charts
     updateRecordsOverTimeChart(type) {
         this.createRecordsOverTimeChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     updateCommonCalcTypesChart(type) {
         this.createCommonCalcTypesChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     updateDiseaseCooccurrenceChart(type) {
         this.createDiseaseCooccurrenceChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     updateRiskByCalcTypeChart(type) {
         this.createRiskByCalcTypeChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     updateProtocolUsageChart(type) {
         this.createProtocolUsageChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     updateHighRiskAnalysisChart(type) {
         this.createHighRiskAnalysisChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     updateDataEntryPatternsChart(type) {
         this.createDataEntryPatternsChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     updateRiskTrendChart(type) {
         this.createRiskTrendChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     updateCalcMethodEffectivenessChart(type) {
         this.createCalcMethodEffectivenessChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     updateDiseaseSeverityChart(type) {
         this.createDiseaseSeverityChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     createRiskPerProtocolChart(type = 'bar') {
@@ -970,6 +1344,7 @@ class RxReportingApp {
 
     updateRiskPerProtocolChart(type) {
         this.createRiskPerProtocolChart(type);
+        this.initializeChartContextMenus(); // Re-add context menu functionality
     }
 
     updateAllCharts() {
@@ -991,6 +1366,10 @@ class RxReportingApp {
         this.createCalcMethodEffectivenessChart(document.getElementById('calcMethodEffectivenessChartType').value);
         this.createDiseaseSeverityChart(document.getElementById('diseaseSeverityChartType').value);
         this.createRiskPerProtocolChart(document.getElementById('riskPerProtocolChartType').value);
+
+        // Re-add event listeners and context menu functionality after all charts are recreated
+        this.addChartEventListeners();
+        this.initializeChartContextMenus();
     }
 
     updateAllCharts() {
@@ -1012,6 +1391,10 @@ class RxReportingApp {
         if (this.calcMethodEffectivenessChart) this.createCalcMethodEffectivenessChart(document.getElementById('calcMethodEffectivenessChartType')?.value);
         if (this.diseaseSeverityChart) this.createDiseaseSeverityChart(document.getElementById('diseaseSeverityChartType')?.value);
         if (this.riskPerProtocolChart) this.createRiskPerProtocolChart(document.getElementById('riskPerProtocolChartType')?.value);
+
+        // Re-add event listeners and context menu functionality after charts are recreated
+        this.addChartEventListeners();
+        this.initializeChartContextMenus();
     }
 
     getDiseaseDistribution() {
@@ -1980,31 +2363,442 @@ class RxReportingApp {
         chartIds.forEach(chartId => {
             const canvas = document.getElementById(chartId);
             if (canvas && this[chartId]) { // Only add context menu if canvas exists and context is not null
-                canvas.addEventListener('contextmenu', (e) => {
-                    e.preventDefault();
-                    this.showChartContextMenu(e, chartId);
+                // Remove existing context menu listener to avoid duplicates
+                canvas.removeEventListener('contextmenu', this.showChartContextMenu);
+
+                // Add new context menu listener with error handling
+                const contextMenuHandler = (e) => {
+                    try {
+                        e.preventDefault();
+                        this.showChartContextMenu(e, chartId);
+                    } catch (error) {
+                        console.error('Error in context menu handler:', error);
+                    }
+                };
+
+                canvas.addEventListener('contextmenu', contextMenuHandler);
+
+                // Store the handler reference for cleanup if needed
+                canvas._contextMenuHandler = contextMenuHandler;
+
+                console.log(`✅ Context menu initialized for ${chartId}`);
+            } else {
+                console.log(`⚠️ Context menu not initialized for ${chartId} - canvas or context missing`);
+            }
+        });
+
+        console.log('Context menu initialization complete');
+    }
+
+    // Hide context menu when clicking elsewhere
+    document.addEventListener('click', (e) => {
+        // Only hide if clicking outside the context menu
+        const contextMenu = document.getElementById('chartContextMenu');
+        if (contextMenu && !contextMenu.contains(e.target)) {
+            this.hideChartContextMenu();
+        }
+    });
+
+    // Reset context when window loses focus
+    window.addEventListener('blur', () => {
+        this.resetChartContext();
+    });
+
+    // Reset context on page unload
+    window.addEventListener('beforeunload', () => {
+        this.resetChartContext();
+    });
+
+    // Enhanced chart element detection with multiple fallback strategies
+    getChartElementDataAtPosition(chart, position) {
+        console.log('Attempting element detection at position:', position);
+
+        try {
+            // Strategy 1: Try the standard Chart.js method with different parameters
+            let elements = chart.getElementsAtEventForMode(position, 'nearest', { intersect: true }, true);
+            if (elements && elements.length > 0) {
+                console.log('✅ Direct intersection detection succeeded:', elements.length, 'elements found');
+                return this.extractElementData(chart, elements[0]);
+            }
+
+            // Strategy 2: Try with intersect: false (broader detection)
+            elements = chart.getElementsAtEventForMode(position, 'nearest', { intersect: false }, true);
+            if (elements && elements.length > 0) {
+                console.log('✅ Broad intersection detection succeeded:', elements.length, 'elements found');
+                return this.extractElementData(chart, elements[0]);
+            }
+
+            // Strategy 3: Try different interaction modes
+            const modes = ['nearest', 'index', 'dataset', 'point', 'x'];
+            for (const mode of modes) {
+                try {
+                    elements = chart.getElementsAtEventForMode(position, mode, { intersect: false }, true);
+                    if (elements && elements.length > 0) {
+                        console.log(`✅ Mode '${mode}' detection succeeded:`, elements.length, 'elements found');
+                        return this.extractElementData(chart, elements[0]);
+                    }
+                } catch (error) {
+                    console.log(`⚠️ Mode '${mode}' failed:`, error.message);
+                }
+            }
+
+            // Strategy 4: Use Chart.js built-in tooltip detection
+            const tooltip = chart.tooltip;
+            if (tooltip && chart.data.labels && chart.data.labels.length > 0) {
+                // Try to get the element at the position using tooltip logic
+                const tooltipElement = this.getTooltipElementAtPosition(chart, position);
+                if (tooltipElement) {
+                    console.log('✅ Tooltip-based detection succeeded');
+                    return tooltipElement;
+                }
+            }
+
+            // Strategy 5: Manual calculation using chart metadata
+            const manualElement = this.findNearestElementManually(chart, position);
+            if (manualElement) {
+                console.log('✅ Manual calculation detection succeeded');
+                return manualElement;
+            }
+
+            console.log('❌ All element detection strategies failed');
+            return null;
+        } catch (error) {
+            console.error('Error in element detection:', error);
+            return null;
+        }
+    }
+
+    // Extract element data from chart element
+    extractElementData(chart, element) {
+        const dataset = chart.data.datasets[element.datasetIndex];
+        const dataIndex = element.index;
+
+        if (!dataset || dataIndex === undefined || dataIndex === null) {
+            console.warn('Invalid element data:', { element, dataset, dataIndex });
+            return null;
+        }
+
+        return {
+            label: chart.data.labels?.[dataIndex] || `Element ${dataIndex}`,
+            value: dataset.data?.[dataIndex],
+            index: dataIndex,
+            datasetIndex: element.datasetIndex,
+            elementType: this.getElementType(chart.config.type, element)
+        };
+    }
+
+    // Get element type based on chart type and element properties
+    getElementType(chartType, element) {
+        switch (chartType) {
+            case 'pie':
+            case 'doughnut':
+                return 'slice';
+            case 'bar':
+                return 'bar';
+            case 'line':
+                return 'point';
+            default:
+                return 'element';
+        }
+    }
+
+    // Get element using tooltip detection logic
+    getTooltipElementAtPosition(chart, position) {
+        try {
+            // Use Chart.js internal tooltip positioning logic
+            const tooltip = chart.tooltip;
+            if (!tooltip) return null;
+
+            // Get all data points
+            const datasets = chart.data.datasets;
+            if (!datasets || datasets.length === 0) return null;
+
+            // Find the closest data point to the position
+            let closestElement = null;
+            let minDistance = Infinity;
+
+            datasets.forEach((dataset, datasetIndex) => {
+                if (!dataset.data || dataset.data.length === 0) return;
+
+                dataset.data.forEach((value, index) => {
+                    // Get the pixel position of this data point
+                    const meta = chart.getDatasetMeta(datasetIndex);
+                    if (!meta || !meta.data || !meta.data[index]) return;
+
+                    const element = meta.data[index];
+                    const elementX = element.x || 0;
+                    const elementY = element.y || 0;
+
+                    // Calculate distance from click position
+                    const distance = Math.sqrt(
+                        Math.pow(position.x - elementX, 2) +
+                        Math.pow(position.y - elementY, 2)
+                    );
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        closestElement = {
+                            element: element,
+                            datasetIndex: datasetIndex,
+                            index: index,
+                            distance: distance
+                        };
+                    }
                 });
+            });
+
+            if (closestElement && minDistance < 50) { // 50px tolerance
+                const dataset = datasets[closestElement.datasetIndex];
+                const label = chart.data.labels?.[closestElement.index] || `Element ${closestElement.index}`;
+
+                return {
+                    label: label,
+                    value: dataset.data[closestElement.index],
+                    index: closestElement.index,
+                    datasetIndex: closestElement.datasetIndex,
+                    elementType: this.getElementType(chart.config.type, closestElement.element)
+                };
             }
-        });
 
-        // Hide context menu when clicking elsewhere
-        document.addEventListener('click', (e) => {
-            // Only hide if clicking outside the context menu
-            const contextMenu = document.getElementById('chartContextMenu');
-            if (contextMenu && !contextMenu.contains(e.target)) {
-                this.hideChartContextMenu();
+            return null;
+        } catch (error) {
+            console.error('Error in tooltip-based detection:', error);
+            return null;
+        }
+    }
+
+    // Manual fallback to find nearest element when Chart.js methods fail
+    findNearestElementManually(chart, position) {
+        try {
+            const chartArea = chart.chartArea;
+            if (!chartArea) return null;
+
+            // For pie/doughnut charts, find the slice closest to the click position
+            if (chart.config.type === 'pie' || chart.config.type === 'doughnut') {
+                return this.findNearestPieSlice(chart, position);
             }
-        });
 
-        // Reset context when window loses focus
-        window.addEventListener('blur', () => {
-            this.resetChartContext();
-        });
+            // For bar charts, find the bar closest to the click position
+            if (chart.config.type === 'bar') {
+                return this.findNearestBar(chart, position);
+            }
 
-        // Reset context on page unload
-        window.addEventListener('beforeunload', () => {
-            this.resetChartContext();
-        });
+            // For line charts, find the point closest to the click position
+            if (chart.config.type === 'line') {
+                return this.findNearestLinePoint(chart, position);
+            }
+
+            return null;
+        } catch (error) {
+            console.error('Error in manual element detection:', error);
+            return null;
+        }
+    }
+
+    // Find nearest pie slice manually
+    findNearestPieSlice(chart, position) {
+        try {
+            // Get chart metadata for accurate calculations
+            const meta = chart.getDatasetMeta(0);
+            if (!meta || !meta.data || meta.data.length === 0) return null;
+
+            const centerX = chart.chartArea.left + chart.chartArea.width / 2;
+            const centerY = chart.chartArea.top + chart.chartArea.height / 2;
+            const clickAngle = Math.atan2(position.y - centerY, position.x - centerX);
+
+            // Normalize angle to 0-2π range
+            const normalizedClickAngle = clickAngle < 0 ? clickAngle + 2 * Math.PI : clickAngle;
+
+            let nearestIndex = 0;
+            let nearestAngle = Infinity;
+
+            // Check each slice's angle range
+            meta.data.forEach((arc, index) => {
+                if (arc && typeof arc.startAngle === 'number' && typeof arc.endAngle === 'number') {
+                    let startAngle = arc.startAngle;
+                    let endAngle = arc.endAngle;
+
+                    // Handle cases where angles wrap around
+                    if (startAngle > endAngle) {
+                        endAngle += 2 * Math.PI;
+                    }
+
+                    // Check if click angle is within this slice's range
+                    if (normalizedClickAngle >= startAngle && normalizedClickAngle <= endAngle) {
+                        nearestIndex = index;
+                        nearestAngle = 0; // Exact match
+                        return; // Exit early for exact matches
+                    }
+
+                    // Calculate minimum distance to slice boundaries
+                    const distances = [
+                        Math.abs(normalizedClickAngle - startAngle),
+                        Math.abs(normalizedClickAngle - endAngle),
+                        Math.abs(normalizedClickAngle - (startAngle - 2 * Math.PI)), // Wrap around
+                        Math.abs(normalizedClickAngle - (endAngle + 2 * Math.PI))   // Wrap around
+                    ];
+
+                    const minDistance = Math.min(...distances);
+                    if (minDistance < nearestAngle) {
+                        nearestAngle = minDistance;
+                        nearestIndex = index;
+                    }
+                }
+            });
+
+            // Only return if reasonably close (within 45 degrees)
+            if (nearestAngle < Math.PI / 4) {
+                return {
+                    label: chart.data.labels?.[nearestIndex] || `Slice ${nearestIndex}`,
+                    value: chart.data.datasets[0]?.data?.[nearestIndex],
+                    index: nearestIndex,
+                    datasetIndex: 0,
+                    elementType: 'slice'
+                };
+            }
+
+            return null;
+        } catch (error) {
+            console.error('Error in pie slice detection:', error);
+            return null;
+        }
+    }
+
+    // Find nearest bar manually
+    findNearestBar(chart, position) {
+        try {
+            const xScale = chart.scales.x;
+            const yScale = chart.scales.y;
+
+            if (!xScale || !yScale) return null;
+
+            // Get chart metadata for accurate bar positions
+            const meta = chart.getDatasetMeta(0);
+            if (!meta || !meta.data || meta.data.length === 0) return null;
+
+            let nearestIndex = 0;
+            let nearestDistance = Infinity;
+
+            meta.data.forEach((bar, index) => {
+                if (bar && typeof bar.x === 'number') {
+                    // Calculate distance from click position to bar center
+                    const barX = bar.x;
+                    const barY = bar.y || chart.chartArea.bottom; // Use chart bottom if no y value
+                    const distance = Math.sqrt(
+                        Math.pow(position.x - barX, 2) +
+                        Math.pow(position.y - barY, 2)
+                    );
+
+                    if (distance < nearestDistance) {
+                        nearestDistance = distance;
+                        nearestIndex = index;
+                    }
+                }
+            });
+
+            // Check if click is within reasonable range of the bar (100px tolerance)
+            if (nearestDistance < 100) {
+                return {
+                    label: chart.data.labels?.[nearestIndex] || `Bar ${nearestIndex}`,
+                    value: chart.data.datasets[0]?.data?.[nearestIndex],
+                    index: nearestIndex,
+                    datasetIndex: 0,
+                    elementType: 'bar'
+                };
+            }
+
+            return null;
+        } catch (error) {
+            console.error('Error in bar detection:', error);
+            return null;
+        }
+    }
+
+    // Find nearest line point manually
+    findNearestLinePoint(chart, position) {
+        try {
+            const xScale = chart.scales.x;
+            const yScale = chart.scales.y;
+
+            if (!xScale || !yScale) return null;
+
+            // Get chart metadata for accurate point positions
+            const meta = chart.getDatasetMeta(0);
+            if (!meta || !meta.data || meta.data.length === 0) return null;
+
+            let nearestIndex = 0;
+            let nearestDistance = Infinity;
+
+            meta.data.forEach((point, index) => {
+                if (point && typeof point.x === 'number' && typeof point.y === 'number') {
+                    // Calculate distance from click position to point
+                    const distance = Math.sqrt(
+                        Math.pow(position.x - point.x, 2) +
+                        Math.pow(position.y - point.y, 2)
+                    );
+
+                    if (distance < nearestDistance) {
+                        nearestDistance = distance;
+                        nearestIndex = index;
+                    }
+                }
+            });
+
+            // Check if click is within reasonable range of the point (40px tolerance)
+            if (nearestDistance < 40) {
+                return {
+                    label: chart.data.labels?.[nearestIndex] || `Point ${nearestIndex}`,
+                    value: chart.data.datasets[0]?.data?.[nearestIndex],
+                    index: nearestIndex,
+                    datasetIndex: 0,
+                    elementType: 'point'
+                };
+            }
+
+            return null;
+        } catch (error) {
+            console.error('Error in line point detection:', error);
+            return null;
+        }
+    }
+
+    // Get fallback element data when right-click detection fails
+    getFallbackElementData(chart) {
+        try {
+            if (!chart || !chart.data) return null;
+
+            // Try to get the first available element from the chart
+            if (chart.data.labels && chart.data.labels.length > 0) {
+                const firstLabel = chart.data.labels[0];
+                const firstValue = chart.data.datasets?.[0]?.data?.[0];
+
+                if (firstLabel !== undefined && firstValue !== undefined) {
+                    return {
+                        label: firstLabel,
+                        value: firstValue,
+                        index: 0,
+                        datasetIndex: 0,
+                        elementType: this.getElementType(chart.config.type, { index: 0, datasetIndex: 0 })
+                    };
+                }
+            }
+
+            // If no labels, try to create a generic element
+            if (chart.data.datasets?.[0]?.data?.length > 0) {
+                return {
+                    label: `Element 0`,
+                    value: chart.data.datasets[0].data[0],
+                    index: 0,
+                    datasetIndex: 0,
+                    elementType: this.getElementType(chart.config.type, { index: 0, datasetIndex: 0 })
+                };
+            }
+
+            return null;
+        } catch (error) {
+            console.error('Error getting fallback element data:', error);
+            return null;
+        }
     }
 
     showChartContextMenu(event, chartId) {
@@ -2020,7 +2814,36 @@ class RxReportingApp {
             return;
         }
 
-        const rect = event.target.getBoundingClientRect();
+        // Get the canvas position for element detection
+        const canvas = event.target;
+        const rect = canvas.getBoundingClientRect();
+        const canvasPosition = {
+            x: event.clientX - rect.left,
+            y: event.clientY - rect.top
+        };
+
+        // Try to get chart element data at the right-click position
+        const chart = this.charts[chartId.replace('Chart', 'Chart')];
+        let elementData = null;
+
+        if (chart) {
+            // Enhanced element detection with multiple fallback strategies
+            elementData = this.getChartElementDataAtPosition(chart, canvasPosition);
+
+            // Debug logging for element detection
+            console.log('Right-click element detection:', {
+                chartId,
+                chartType: chart.config.type,
+                position: canvasPosition,
+                elementData,
+                chartData: {
+                    hasLabels: chart.data.labels?.length > 0,
+                    labelCount: chart.data.labels?.length,
+                    hasDatasets: chart.data.datasets?.length > 0,
+                    datasetCount: chart.data.datasets?.length
+                }
+            });
+        }
 
         // Position context menu near cursor
         let x = event.clientX;
@@ -2039,8 +2862,92 @@ class RxReportingApp {
         contextMenu.setAttribute('data-click-x', event.offsetX);
         contextMenu.setAttribute('data-click-y', event.offsetY);
 
+        // Store chart element data if available (either from recent click or right-click detection)
+        if (elementData) {
+            contextMenu.setAttribute('data-element-label', elementData.label || '');
+            contextMenu.setAttribute('data-element-value', elementData.value || '');
+            contextMenu.setAttribute('data-element-index', elementData.index || '');
+            contextMenu.setAttribute('data-element-type', elementData.elementType || '');
+            contextMenu.setAttribute('data-chart-type', chart ? chart.config.type : '');
+
+            // Also update the global chartElementData for consistency
+            this.chartElementData = {
+                chartId: chartId,
+                chartType: chart ? chart.config.type : '',
+                ...elementData
+            };
+
+            console.log('✅ Element data successfully detected and stored:', elementData);
+        } else {
+            // Enhanced fallback mechanism
+            console.log('⚠️ Right-click element detection failed, attempting fallbacks...');
+
+            // Fallback 1: Use previously stored data for the same chart
+            if (this.chartElementData && this.chartElementData.chartId === chartId) {
+                console.log('📋 Using previously stored element data as fallback');
+                contextMenu.setAttribute('data-element-label', this.chartElementData.label || '');
+                contextMenu.setAttribute('data-element-value', this.chartElementData.value || '');
+                contextMenu.setAttribute('data-element-index', this.chartElementData.index || '');
+                contextMenu.setAttribute('data-element-type', this.chartElementData.elementType || '');
+                contextMenu.setAttribute('data-chart-type', this.chartElementData.chartType || '');
+
+                // Set a flag to indicate fallback was used
+                contextMenu.setAttribute('data-fallback-used', 'true');
+            } else {
+                // Fallback 2: Try to get any element from the chart (first/last element)
+                const fallbackElement = this.getFallbackElementData(chart);
+                if (fallbackElement) {
+                    console.log('📋 Using fallback element data (first available element)');
+                    contextMenu.setAttribute('data-element-label', fallbackElement.label || '');
+                    contextMenu.setAttribute('data-element-value', fallbackElement.value || '');
+                    contextMenu.setAttribute('data-element-index', fallbackElement.index || '');
+                    contextMenu.setAttribute('data-element-type', fallbackElement.elementType || '');
+                    contextMenu.setAttribute('data-chart-type', chart ? chart.config.type : '');
+
+                    // Set a flag to indicate fallback was used
+                    contextMenu.setAttribute('data-fallback-used', 'true');
+                } else {
+                    console.warn('❌ No element data available - context menu will have limited functionality');
+                    contextMenu.setAttribute('data-element-label', 'No element detected');
+                    contextMenu.setAttribute('data-element-value', '');
+                    contextMenu.setAttribute('data-element-index', '');
+                    contextMenu.setAttribute('data-element-type', '');
+                    contextMenu.setAttribute('data-chart-type', chart ? chart.config.type : '');
+
+                    // Set a flag to indicate no element data
+                    contextMenu.setAttribute('data-no-element-data', 'true');
+                }
+            }
+        }
+
         // Set a flag to indicate the menu is properly opened
         contextMenu.setAttribute('data-valid-context', 'true');
+
+        // Enhanced logging with detailed debugging information
+        const contextMenuData = {
+            chartId,
+            chartType: chart ? chart.config.type : 'unknown',
+            position: canvasPosition,
+            elementData,
+            fallbackUsed: contextMenu.getAttribute('data-fallback-used') === 'true',
+            noElementData: contextMenu.getAttribute('data-no-element-data') === 'true',
+            canvasSize: canvas ? { width: canvas.width, height: canvas.height } : null,
+            chartData: chart ? {
+                hasLabels: chart.data.labels?.length > 0,
+                labelCount: chart.data.labels?.length,
+                hasDatasets: chart.data.datasets?.length > 0,
+                datasetCount: chart.data.datasets?.length
+            } : null
+        };
+
+        console.log('Context menu opened for chart:', chartId);
+        console.log('Element detection result:', elementData ? 'SUCCESS' : 'FAILED');
+        console.log('Context menu data:', contextMenuData);
+
+        // Show user-friendly message if no element data was detected
+        if (!elementData && !contextMenu.getAttribute('data-fallback-used')) {
+            console.warn('⚠️ No chart element detected at right-click position. Context menu will have limited functionality.');
+        }
     }
 
     hideChartContextMenu() {
@@ -2052,14 +2959,28 @@ class RxReportingApp {
             contextMenu.removeAttribute('data-click-x');
             contextMenu.removeAttribute('data-click-y');
             contextMenu.removeAttribute('data-valid-context');
+            contextMenu.removeAttribute('data-element-label');
+            contextMenu.removeAttribute('data-element-value');
+            contextMenu.removeAttribute('data-element-index');
+            contextMenu.removeAttribute('data-element-type');
+            contextMenu.removeAttribute('data-chart-type');
         }
         this.currentChartInfo = null;
+        // Don't clear chartElementData immediately - it might be needed for filter operations
+        // It will be cleared when a new chart element is clicked or when context is reset
     }
 
     // Reset context when window loses focus or other events
     resetChartContext() {
         this.currentChartInfo = null;
+        this.chartElementData = null; // Clear chart element data
         this.hideChartContextMenu();
+    }
+
+    // Clear chart element data when starting a new operation
+    clearChartElementData() {
+        this.chartElementData = null;
+        console.log('Chart element data cleared');
     }
 
     drillDownFromChart(action) {
@@ -2092,7 +3013,9 @@ class RxReportingApp {
             return;
         }
 
-        this.hideChartContextMenu();
+        // For filterData action, don't hide the context menu immediately
+        // as the filter method needs to access the context menu data
+        const shouldHideMenu = action !== 'filterData';
 
         try {
             switch (action) {
@@ -2122,6 +3045,11 @@ class RxReportingApp {
                     <p>Please try right-clicking on the chart again and selecting a different option.</p>
                 </div>
             `);
+        } finally {
+            // Hide the context menu after the action is complete (except for filterData)
+            if (shouldHideMenu) {
+                this.hideChartContextMenu();
+            }
         }
     }
 
@@ -2339,14 +3267,379 @@ class RxReportingApp {
     }
 
     filterDataByChartSelection(chartId) {
-        // This would filter the main data table based on chart selection
-        // For now, show a message
-        this.showDrillDownModal('Filter Data', `
-            <div class="drill-down-details">
-                <p><strong>Filter functionality would be implemented here</strong></p>
-                <p>This would filter the main data table to show only records related to the selected chart item.</p>
-            </div>
-        `);
+        try {
+            // Get chart element data from context menu
+            const contextMenu = document.getElementById('chartContextMenu');
+            if (!contextMenu) {
+                console.warn('Context menu not found for filtering');
+                this.showDrillDownModal('Filter Error', `
+                    <div class="drill-down-details">
+                        <p><strong>Context menu not found</strong></p>
+                        <p>Please right-click on a chart element again and try the filter option.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            // Check if context menu is properly opened
+            if (contextMenu.getAttribute('data-valid-context') !== 'true') {
+                console.warn('Context menu not properly opened for filtering');
+                this.showDrillDownModal('Filter Error', `
+                    <div class="drill-down-details">
+                        <p><strong>No chart element selected</strong></p>
+                        <p>Please right-click on a chart element (slice, bar, or point) before using the filter option.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            const elementLabel = contextMenu.getAttribute('data-element-label');
+            const elementValue = contextMenu.getAttribute('data-element-value');
+            const elementIndex = contextMenu.getAttribute('data-element-index');
+            const elementType = contextMenu.getAttribute('data-element-type');
+            const chartType = contextMenu.getAttribute('data-chart-type');
+
+            // Enhanced validation with more specific error messages
+            if (!elementLabel || elementLabel.trim() === '' || elementLabel === 'No element detected') {
+                console.warn('No element label found in context menu:', { elementLabel, chartId });
+
+                let errorMessage = '';
+                if (contextMenu.getAttribute('data-no-element-data') === 'true') {
+                    errorMessage = `
+                        <div class="drill-down-details">
+                            <p><strong>No chart element detected</strong></p>
+                            <p>The right-click position did not intersect with any chart element.</p>
+                            <p><strong>Troubleshooting steps:</strong></p>
+                            <ul>
+                                <li>Try right-clicking closer to the center of chart elements</li>
+                                <li>Try left-clicking on an element first, then right-clicking</li>
+                                <li>Ensure you're clicking on visible chart elements (slices, bars, points)</li>
+                            </ul>
+                            <p><strong>Debug Info:</strong> Chart: ${this.getChartDisplayName(chartId)}, Position: ${contextMenu.getAttribute('data-click-x')}, ${contextMenu.getAttribute('data-click-y')}</p>
+                        </div>
+                    `;
+                } else if (contextMenu.getAttribute('data-fallback-used') === 'true') {
+                    errorMessage = `
+                        <div class="drill-down-details">
+                            <p><strong>Using fallback element data</strong></p>
+                            <p>The right-click didn't detect a specific element, but fallback data is available.</p>
+                            <p><strong>Element:</strong> ${elementLabel}</p>
+                            <p>You can still use the filter option with this fallback data.</p>
+                        </div>
+                    `;
+                } else {
+                    errorMessage = `
+                        <div class="drill-down-details">
+                            <p><strong>No chart element detected</strong></p>
+                            <p>Please make sure you right-clicked directly on a chart element (slice, bar, or point).</p>
+                            <p><strong>Debug Info:</strong> Chart: ${this.getChartDisplayName(chartId)}, Position: ${contextMenu.getAttribute('data-click-x')}, ${contextMenu.getAttribute('data-click-y')}</p>
+                        </div>
+                    `;
+                }
+
+                this.showDrillDownModal('Filter Error', errorMessage);
+                return;
+            }
+
+            // Validate chart exists
+            const chart = this.charts[chartId.replace('Chart', 'Chart')];
+            if (!chart) {
+                console.warn('Chart not found for filtering:', chartId);
+                this.showDrillDownModal('Filter Error', `
+                    <div class="drill-down-details">
+                        <p><strong>Chart not found</strong></p>
+                        <p>The chart may have been recreated. Please try right-clicking on the chart element again.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            // Create filter based on chart type and element
+            const filterInfo = this.createChartFilter(chartId, elementLabel, elementValue, elementIndex, elementType, chartType);
+
+            if (!filterInfo) {
+                console.warn('Could not create filter for:', { chartId, elementLabel, elementType });
+                this.showDrillDownModal('Filter Error', `
+                    <div class="drill-down-details">
+                        <p><strong>Unsupported chart element</strong></p>
+                        <p>This type of chart element cannot be used for filtering. Please try a different chart or element.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            // Add to active chart filters
+            this.chartFilters.set(chartId, filterInfo);
+
+            // Apply the filter
+            this.applyChartFilters();
+
+            // Show success message with more detailed information
+            this.showDrillDownModal('Filter Applied Successfully', `
+                <div class="drill-down-details">
+                    <p><strong>✅ Filter applied successfully!</strong></p>
+                    <p><strong>Chart:</strong> ${this.getChartDisplayName(chartId)}</p>
+                    <p><strong>Filter:</strong> ${filterInfo.description}</p>
+                    <p><strong>Records found:</strong> ${this.filteredData.length} (filtered from ${this.data.length} total)</p>
+                    <div class="filter-actions">
+                        <button class="btn btn-secondary btn-small" onclick="app.clearChartFilter('${chartId}')">
+                            <i class="fas fa-times"></i> Clear This Filter
+                        </button>
+                        <button class="btn btn-secondary btn-small" onclick="app.clearAllChartFilters()">
+                            <i class="fas fa-times-circle"></i> Clear All Filters
+                        </button>
+                    </div>
+                </div>
+            `);
+
+            // Update active filter indicators
+            this.updateActiveFilterIndicators();
+
+            // Hide the context menu now that filtering is complete
+            this.hideChartContextMenu();
+
+            console.log('Chart filter applied successfully:', filterInfo);
+
+        } catch (error) {
+            console.error('Error applying chart filter:', error);
+            this.showDrillDownModal('Filter Error', `
+                <div class="drill-down-details">
+                    <p><strong>An error occurred while applying the filter.</strong></p>
+                    <p><strong>Error:</strong> ${error.message}</p>
+                    <p>Please try again or contact support if the problem persists.</p>
+                </div>
+            `);
+            // Hide the context menu even if there was an error
+            this.hideChartContextMenu();
+        }
+    }
+
+    createChartFilter(chartId, elementLabel, elementValue, elementIndex, elementType, chartType) {
+        let filterField = '';
+        let filterValue = '';
+        let description = '';
+
+        switch (chartId) {
+            case 'diseaseChart':
+            case 'diseaseCooccurrenceChart':
+            case 'diseaseSeverityChart':
+                filterField = 'DiseaseProtocolName';
+                filterValue = elementLabel;
+                description = `Disease: ${elementLabel}`;
+                break;
+
+            case 'riskChart':
+            case 'riskBreakdownChart':
+            case 'highRiskAnalysisChart':
+                filterField = 'RiskRatingName';
+                filterValue = elementLabel;
+                description = `Risk Level: ${elementLabel}`;
+                break;
+
+            case 'calculationTypeChart':
+            case 'calculationTypePerDiseaseChart':
+            case 'commonCalcTypesChart':
+            case 'riskByCalcTypeChart':
+            case 'calcMethodEffectivenessChart':
+                filterField = 'RiskCalculationTypeName';
+                filterValue = elementLabel;
+                description = `Calculation Type: ${elementLabel}`;
+                break;
+
+            case 'protocolUsageChart':
+            case 'riskPerProtocolChart':
+                filterField = 'DiseaseProtocolName';
+                filterValue = elementLabel;
+                description = `Protocol: ${elementLabel}`;
+                break;
+
+            case 'peoplePerConditionChart':
+                filterField = 'DiseaseProtocolName';
+                filterValue = elementLabel;
+                description = `Condition: ${elementLabel}`;
+                break;
+
+            case 'recordsOverTimeChart':
+            case 'dataEntryPatternsChart':
+            case 'riskTrendChart':
+                // For time-based charts, filter by date range or specific period
+                if (elementLabel.includes('-')) {
+                    filterField = 'DateCalculated';
+                    filterValue = elementLabel; // YYYY-MM format
+                    description = `Time Period: ${elementLabel}`;
+                } else {
+                    return null; // Cannot filter by time period
+                }
+                break;
+
+            default:
+                console.warn('Unknown chart type for filtering:', chartId);
+                return null;
+        }
+
+        return {
+            chartId,
+            chartType,
+            elementType,
+            elementLabel,
+            elementValue,
+            filterField,
+            filterValue,
+            description
+        };
+    }
+
+    applyChartFilters() {
+        // Start with all data
+        let filtered = [...this.data];
+
+        // Apply existing search and filter criteria first
+        const searchTerm = this.searchInput.value.toLowerCase();
+        const diseaseFilter = this.filterDisease.value;
+        const riskFilter = this.filterRisk.value;
+
+        // Apply search filter
+        if (searchTerm) {
+            filtered = filtered.filter(row =>
+                Object.values(row).some(value =>
+                    value.toString().toLowerCase().includes(searchTerm)
+                )
+            );
+        }
+
+        // Apply disease filter
+        if (diseaseFilter) {
+            filtered = filtered.filter(row => row.DiseaseProtocolName === diseaseFilter);
+        }
+
+        // Apply risk filter
+        if (riskFilter) {
+            filtered = filtered.filter(row => row.RiskRatingName === riskFilter);
+        }
+
+        // Apply chart-based filters
+        this.chartFilters.forEach((filterInfo, chartId) => {
+            filtered = filtered.filter(row => {
+                const rowValue = row[filterInfo.filterField];
+                return rowValue === filterInfo.filterValue;
+            });
+        });
+
+        // Update filtered data and refresh table
+        this.filteredData = filtered;
+        this.currentPage = 1;
+        this.renderTable();
+    }
+
+    clearChartFilter(chartId) {
+        if (this.chartFilters.has(chartId)) {
+            this.chartFilters.delete(chartId);
+            this.applyChartFilters();
+            this.updateActiveFilterIndicators();
+
+            // Show confirmation
+            this.showSuccessMessage(`Filter for ${this.getChartDisplayName(chartId)} cleared`);
+        }
+    }
+
+    clearAllChartFilters() {
+        this.chartFilters.clear();
+        this.applyChartFilters();
+        this.updateActiveFilterIndicators();
+
+        // Show confirmation
+        this.showSuccessMessage('All chart filters cleared');
+    }
+
+    getChartDisplayName(chartId) {
+        const displayNames = {
+            'diseaseChart': 'Disease Distribution',
+            'riskChart': 'Risk Rating Distribution',
+            'peoplePerConditionChart': 'People per Condition',
+            'riskBreakdownChart': 'Risk Rating Breakdown',
+            'calculationTypeChart': 'Calculation Types per Risk Rating',
+            'calculationTypePerDiseaseChart': 'Calculation Types per Disease',
+            'recordsOverTimeChart': 'Records Over Time',
+            'commonCalcTypesChart': 'Most Common Calculation Types',
+            'diseaseCooccurrenceChart': 'Disease Co-occurrence',
+            'riskByCalcTypeChart': 'Risk by Calculation Type',
+            'protocolUsageChart': 'Protocol Usage Frequency',
+            'highRiskAnalysisChart': 'High Risk Patient Analysis',
+            'dataEntryPatternsChart': 'Data Entry Patterns',
+            'riskTrendChart': 'Risk Trend Analysis',
+            'calcMethodEffectivenessChart': 'Calculation Method Effectiveness',
+            'diseaseSeverityChart': 'Disease Severity Patterns',
+            'riskPerProtocolChart': 'Risk Rating per Protocol'
+        };
+
+        return displayNames[chartId] || chartId;
+    }
+
+    updateActiveFilterIndicators() {
+        // Remove existing filter indicators
+        const existingIndicators = document.querySelectorAll('.chart-filter-indicator');
+        existingIndicators.forEach(indicator => indicator.remove());
+
+        // Add filter indicators to chart containers
+        this.chartFilters.forEach((filterInfo, chartId) => {
+            const chartContainer = document.querySelector(`[onclick*="${chartId}"]`)?.closest('.chart-container');
+            if (chartContainer) {
+                const indicator = document.createElement('div');
+                indicator.className = 'chart-filter-indicator';
+                indicator.innerHTML = `
+                    <span class="filter-badge">
+                        <i class="fas fa-filter"></i>
+                        ${filterInfo.description}
+                        <button class="filter-remove" onclick="app.clearChartFilter('${chartId}')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </span>
+                `;
+
+                // Add styles
+                indicator.style.cssText = `
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                    z-index: 1000;
+                    background: rgba(40, 167, 69, 0.9);
+                    color: white;
+                    padding: 5px 10px;
+                    border-radius: 15px;
+                    font-size: 0.8rem;
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                `;
+
+                const badgeStyle = `
+                    background: rgba(40, 167, 69, 0.9);
+                    color: white;
+                    padding: 3px 8px;
+                    border-radius: 12px;
+                    font-size: 0.7rem;
+                    display: inline-flex;
+                    align-items: center;
+                    gap: 3px;
+                `;
+
+                const removeButtonStyle = `
+                    background: none;
+                    border: none;
+                    color: white;
+                    cursor: pointer;
+                    padding: 0;
+                    font-size: 0.7rem;
+                    opacity: 0.8;
+                `;
+
+                indicator.querySelector('.filter-badge').style.cssText = badgeStyle;
+                indicator.querySelector('.filter-remove').style.cssText = removeButtonStyle;
+
+                chartContainer.style.position = 'relative';
+                chartContainer.appendChild(indicator);
+            }
+        });
     }
 
     exportChartData(chartId) {
@@ -2439,7 +3732,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.app = new RxReportingApp();
 });
 
-// Add CSS for drill-down timeline
+// Add CSS for drill-down timeline and chart filter indicators
 const style = document.createElement('style');
 style.textContent = `
     .risk-timeline {
@@ -2474,6 +3767,84 @@ style.textContent = `
     .btn-small {
         padding: 0.25rem 0.5rem;
         font-size: 0.8rem;
+    }
+
+    .chart-filter-indicator {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 1000;
+        pointer-events: none;
+    }
+
+    .filter-badge {
+        background: rgba(40, 167, 69, 0.9);
+        color: white;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        pointer-events: auto;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .filter-badge:hover {
+        background: rgba(32, 135, 56, 0.9);
+    }
+
+    .filter-remove {
+        background: none;
+        border: none;
+        color: white;
+        cursor: pointer;
+        padding: 0;
+        font-size: 0.7rem;
+        opacity: 0.8;
+        margin-left: 3px;
+    }
+
+    .filter-remove:hover {
+        opacity: 1;
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+    }
+
+    .drill-down-details {
+        line-height: 1.6;
+    }
+
+    .drill-down-details h5 {
+        margin-top: 15px;
+        margin-bottom: 8px;
+        color: #333;
+        font-size: 1rem;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 4px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .detail-label {
+        font-weight: 500;
+        color: #555;
+    }
+
+    .detail-value {
+        color: #777;
+        text-align: right;
     }
 `;
 document.head.appendChild(style);

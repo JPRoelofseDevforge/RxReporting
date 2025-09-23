@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Context Menu Element Detection Fix Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f5f5f5; }
+        .test-container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .chart-container { width: 300px; height: 250px; margin: 20px; display: inline-block; border: 1px solid #ddd; border-radius: 5px; position: relative; }
+        .chart-title { background: #007bff; color: white; padding: 8px; margin: 0; font-size: 14px; text-align: center; }
+        .test-controls { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px; }
+        .test-button { margin: 5px; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .test-button:hover { background: #0056b3; }
+        .test-button.success { background: #28a745; }
+        .test-button.danger { background: #dc3545; }
+        .log-container { height: 200px; overflow-y: auto; background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; font-family: monospace; font-size: 12px; margin-top: 20px; }
+        .log-entry { margin: 2px 0; }
+        .log-success { color: #28a745; }
+        .log-error { color: #dc3545; }
+        .log-warning { color: #ffc107; }
+        .log-info { color: #17a2b8; }
+        .context-menu { position: absolute; background: white; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); z-index: 10000; display: none; }
+        .context-menu-item { padding: 8px 12px; cursor: pointer; font-size: 13px; }
+        .context-menu-item:hover { background: #f0f0f0; }
+        .context-menu-separator { height: 1px; background: #eee; margin: 4px 0; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Context Menu Element Detection Fix Test</h1>
+        <p>This test validates the fix for right-click context menu element detection issues.</p>
+
+        <div class="test-controls">
+            <h3>Test Controls</h3>
+            <button class="test-button" onclick="createTestCharts()">Create Test Charts</button>
+            <button class="test-button success" onclick="runRightClickTests()">Test Right-Click Detection</button>
+            <button class="test-button" onclick="runLeftClickTests()">Test Left-Click Detection</button>
+            <button class="test-button danger" onclick="clearLog()">Clear Log</button>
+        </div>
+
+        <div>
+            <h3>Test Charts</h3>
+            <div class="chart-container">
+                <h4 class="chart-title">Pie Chart</h4>
+                <canvas id="testPieChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h4 class="chart-title">Bar Chart</h4>
+                <canvas id="testBarChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <h4 class="chart-title">Line Chart</h4>
+                <canvas id="testLineChart"></canvas>
+            </div>
+        </div>
+
+        <div>
+            <h3>Test Log</h3>
+            <div id="testLog" class="log-container"></div>
+        </div>
+    </div>
+
+    <!-- Context Menu for Testing -->
+    <div id="testContextMenu" class="context-menu">
+        <div class="context-menu-item" onclick="filterByThisItem()">
+            <i>🔍</i> Filter by This Item
+        </div>
+        <div class="context-menu-item" onclick="viewDetails()">
+            <i>👁️</i> View Details
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" onclick="hideContextMenu()">
+            <i>❌</i> Close Menu
+        </div>
+    </div>
+
+    <script>
+        // Test application class
+        class ContextMenuTest {
+            constructor() {
+                this.charts = {};
+                this.logContainer = document.getElementById('testLog');
+                this.createTestCharts();
+                this.bindEvents();
+            }
+
+            log(message, type = 'info') {
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry log-${type}`;
+                logEntry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+                this.logContainer.appendChild(logEntry);
+                this.logContainer.scrollTop = this.logContainer.scrollHeight;
+                console.log(`[${type.toUpperCase()}] ${message}`);
+            }
+
+            createTestCharts() {
+                this.log('Creating test charts...', 'info');
+
+                // Pie Chart
+                const pieCtx = document.getElementById('testPieChart').getContext('2d');
+                this.charts.pieChart = new Chart(pieCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: ['Diabetes', 'Hypertension', 'Heart Disease', 'Cancer', 'Other'],
+                        datasets: [{
+                            data: [25, 20, 15, 10, 30],
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.6)',
+                                'rgba(54, 162, 235, 0.6)',
+                                'rgba(255, 205, 86, 0.6)',
+                                'rgba(75, 192, 192, 0.6)',
+                                'rgba(153, 102, 255, 0.6)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+
+                // Bar Chart
+                const barCtx = document.getElementById('testBarChart').getContext('2d');
+                this.charts.barChart = new Chart(barCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['High Risk', 'Medium Risk', 'Low Risk'],
+                        datasets: [{
+                            label: 'Risk Distribution',
+                            data: [45, 30, 25],
+                            backgroundColor: [
+                                'rgba(220, 53, 69, 0.6)',
+                                'rgba(255, 193, 7, 0.6)',
+                                'rgba(40, 167, 69, 0.6)'
+                            ]
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+
+                // Line Chart
+                const lineCtx = document.getElementById('testLineChart').getContext('2d');
+                this.charts.lineChart = new Chart(lineCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        datasets: [{
+                            label: 'Records Over Time',
+                            data: [12, 19, 3, 5, 2, 3],
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 2,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true }
+                        }
+                    }
+                });
+
+                this.log('Test charts created successfully', 'success');
+            }
+
+            bindEvents() {
+                // Add event listeners to test charts
+                Object.keys(this.charts).forEach(chartKey => {
+                    const canvas = document.getElementById(`test${chartKey.charAt(0).toUpperCase() + chartKey.slice(1).replace('Chart', 'Chart')}`);
+                    if (canvas) {
+                        canvas.addEventListener('click', (e) => this.handleChartClick(e, chartKey));
+                        canvas.addEventListener('contextmenu', (e) => this.handleChartRightClick(e, chartKey));
+                    }
+                });
+            }
+
+            handleChartClick(event, chartKey) {
+                const chart = this.charts[chartKey];
+                const canvasPosition = Chart.helpers.getRelativePosition(event, chart);
+
+                this.log(`Left-click on ${chartKey} at position: ${canvasPosition.x}, ${canvasPosition.y}`, 'info');
+
+                const elementData = this.getChartElementDataAtPosition(chart, canvasPosition);
+
+                if (elementData) {
+                    this.log(`✅ Left-click detected element in ${chartKey}: ${elementData.label} (${elementData.elementType})`, 'success');
+                } else {
+                    this.log(`❌ Left-click failed to detect element in ${chartKey}`, 'error');
+                }
+            }
+
+            handleChartRightClick(event, chartKey) {
+                event.preventDefault();
+                const chart = this.charts[chartKey];
+                const rect = event.target.getBoundingClientRect();
+                const canvasPosition = {
+                    x: event.clientX - rect.left,
+                    y: event.clientY - rect.top
+                };
+
+                this.log(`Right-click on ${chartKey} at position: ${canvasPosition.x}, ${canvasPosition.y}`, 'info');
+
+                const elementData = this.getChartElementDataAtPosition(chart, canvasPosition);
+
+                if (elementData) {
+                    this.log(`✅ Right-click detected element in ${chartKey}: ${elementData.label} (${elementData.elementType})`, 'success');
+                } else {
+                    this.log(`❌ Right-click failed to detect element in ${chartKey}`, 'error');
+                }
+
+                // Test context menu functionality
+                this.showTestContextMenu(event, chartKey, elementData);
+            }
+
+            showTestContextMenu(event, chartKey, elementData) {
+                const contextMenu = document.getElementById('testContextMenu');
+                const menuItems = contextMenu.querySelectorAll('.context-menu-item');
+
+                if (elementData) {
+                    menuItems[0].innerHTML = `<i>🔍</i> Filter by ${elementData.label}`;
+                    menuItems[1].innerHTML = `<i>👁️</i> View ${elementData.elementType} details`;
+                    contextMenu.setAttribute('data-element-label', elementData.label);
+                    contextMenu.setAttribute('data-element-type', elementData.elementType);
+                } else {
+                    menuItems[0].innerHTML = `<i>🔍</i> Filter by This Item (No data)`;
+                    menuItems[1].innerHTML = `<i>👁️</i> View Details (No data)`;
+                    contextMenu.setAttribute('data-element-label', 'null');
+                    contextMenu.setAttribute('data-element-type', 'null');
+                }
+
+                // Position and show context menu
+                contextMenu.style.left = `${event.clientX}px`;
+                contextMenu.style.top = `${event.clientY}px`;
+                contextMenu.style.display = 'block';
+
+                this.log(`Context menu opened for chart: ${chartKey} Element data: ${elementData ? elementData.label : 'null'}`, 'info');
+
+                // Auto-hide after 3 seconds for testing
+                setTimeout(() => {
+                    this.hideContextMenu();
+                }, 3000);
+            }
+
+            hideContextMenu() {
+                const contextMenu = document.getElementById('testContextMenu');
+                contextMenu.style.display = 'none';
+            }
+
+            // Enhanced element detection method (copy from main app with fixes)
+            getChartElementDataAtPosition(chart, position) {
+                console.log('Attempting element detection at position:', position);
+
+                // Strategy 1: Try direct intersection (original method)
+                let elements = chart.getElementsAtEventForMode(position, 'nearest', { intersect: true }, false);
+                if (elements.length > 0) {
+                    console.log('✅ Direct intersection detection succeeded:', elements.length, 'elements found');
+                    return this.extractElementData(chart, elements[0]);
+                }
+
+                // Strategy 2: Try with intersect: false (broader detection)
+                elements = chart.getElementsAtEventForMode(position, 'nearest', { intersect: false }, false);
+                if (elements.length > 0) {
+                    console.log('✅ Broad intersection detection succeeded:', elements.length, 'elements found');
+                    return this.extractElementData(chart, elements[0]);
+                }
+
+                // Strategy 3: Try with different modes
+                const modes = ['nearest', 'index', 'dataset', 'point', 'x'];
+                for (const mode of modes) {
+                    try {
+                        elements = chart.getElementsAtEventForMode(position, mode, { intersect: false }, false);
+                        if (elements.length > 0) {
+                            console.log(`✅ Mode '${mode}' detection succeeded:`, elements.length, 'elements found');
+                            return this.extractElementData(chart, elements[0]);
+                        }
+                    } catch (error) {
+                        console.log(`⚠️ Mode '${mode}' failed:`, error.message);
+                    }
+                }
+
+                // Strategy 4: Manual fallback calculations
+                const manualElement = this.findNearestElementManually(chart, position);
+                if (manualElement) {
+                    console.log('✅ Manual calculation detection succeeded');
+                    return manualElement;
+                }
+
+                console.log('❌ All element detection strategies failed');
+                return null;
+            }
+
+            extractElementData(chart, element) {
+                const dataset = chart.data.datasets[element.datasetIndex];
+                const dataIndex = element.index;
+
+                if (!dataset || dataIndex === undefined || dataIndex === null) {
+                    console.warn('Invalid element data:', { element, dataset, dataIndex });
+                    return null;
+                }
+
+                return {
+                    label: chart.data.labels?.[dataIndex] || `Element ${dataIndex}`,
+                    value: dataset.data?.[dataIndex],
+                    index: dataIndex,
+                    datasetIndex: element.datasetIndex,
+                    elementType: this.getElementType(chart.config.type, element)
+                };
+            }
+
+            getElementType(chartType, element) {
+                switch (chartType) {
+                    case 'pie':
+                    case 'doughnut':
+                        return 'slice';
+                    case 'bar':
+                        return 'bar';
+                    case 'line':
+                        return 'point';
+                    default:
+                        return 'element';
+                }
+            }
+
+            findNearestElementManually(chart, position) {
+                const chartType = chart.config.type;
+
+                switch (chartType) {
+                    case 'pie':
+                    case 'doughnut':
+                        return this.findNearestPieSlice(chart, position);
+                    case 'bar':
+                        return this.findNearestBar(chart, position);
+                    case 'line':
+                        return this.findNearestLinePoint(chart, position);
+                    default:
+                        return null;
+                }
+            }
+
+            findNearestPieSlice(chart, position) {
+                const centerX = chart.width / 2;
+                const centerY = chart.height / 2;
+                const dx = position.x - centerX;
+                const dy = position.y - centerY;
+                const angle = Math.atan2(dy, dx);
+
+                // Normalize angle to 0-2π range
+                const normalizedAngle = angle < 0 ? angle + 2 * Math.PI : angle;
+
+                // Find the slice that contains this angle
+                const meta = chart.getDatasetMeta(0);
+                if (!meta.data || meta.data.length === 0) return null;
+
+                for (let i = 0; i < meta.data.length; i++) {
+                    const arc = meta.data[i];
+                    if (arc.startAngle <= normalizedAngle && arc.endAngle >= normalizedAngle) {
+                        return {
+                            label: chart.data.labels[i],
+                            value: chart.data.datasets[0].data[i],
+                            index: i,
+                            datasetIndex: 0,
+                            elementType: 'slice'
+                        };
+                    }
+                }
+
+                return null;
+            }
+
+            findNearestBar(chart, position) {
+                const xScale = chart.scales.x;
+                const yScale = chart.scales.y;
+
+                if (!xScale || !yScale) return null;
+
+                // Find the bar closest to the x position
+                const meta = chart.getDatasetMeta(0);
+                if (!meta.data || meta.data.length === 0) return null;
+
+                let nearestBar = null;
+                let minDistance = Infinity;
+
+                for (let i = 0; i < meta.data.length; i++) {
+                    const bar = meta.data[i];
+                    const barX = bar.x;
+                    const distance = Math.abs(position.x - barX);
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nearestBar = i;
+                    }
+                }
+
+                if (nearestBar !== null) {
+                    return {
+                        label: chart.data.labels[nearestBar],
+                        value: chart.data.datasets[0].data[nearestBar],
+                        index: nearestBar,
+                        datasetIndex: 0,
+                        elementType: 'bar'
+                    };
+                }
+
+                return null;
+            }
+
+            findNearestLinePoint(chart, position) {
+                const meta = chart.getDatasetMeta(0);
+                if (!meta.data || meta.data.length === 0) return null;
+
+                let nearestPoint = null;
+                let minDistance = Infinity;
+
+                for (let i = 0; i < meta.data.length; i++) {
+                    const point = meta.data[i];
+                    const distance = Math.sqrt(
+                        Math.pow(position.x - point.x, 2) +
+                        Math.pow(position.y - point.y, 2)
+                    );
+
+                    if (distance < minDistance) {
+                        minDistance = distance;
+                        nearestPoint = i;
+                    }
+                }
+
+                if (nearestPoint !== null) {
+                    return {
+                        label: chart.data.labels[nearestPoint],
+                        value: chart.data.datasets[0].data[nearestPoint],
+                        index: nearestPoint,
+                        datasetIndex: 0,
+                        elementType: 'point'
+                    };
+                }
+
+                return null;
+            }
+
+            runRightClickTests() {
+                this.log('Testing right-click element detection...', 'info');
+
+                Object.keys(this.charts).forEach(chartKey => {
+                    const chart = this.charts[chartKey];
+                    const canvas = document.getElementById(`test${chartKey.charAt(0).toUpperCase() + chartKey.slice(1).replace('Chart', 'Chart')}`);
+
+                    if (canvas && chart) {
+                        // Test multiple positions
+                        const testPositions = [
+                            { x: 100, y: 100, description: 'Center-left' },
+                            { x: 150, y: 125, description: 'Center' },
+                            { x: 125, y: 175, description: 'Bottom-center' }
+                        ];
+
+                        testPositions.forEach((pos, index) => {
+                            const canvasPosition = { x: pos.x, y: pos.y };
+                            const elementData = this.getChartElementDataAtPosition(chart, canvasPosition);
+
+                            if (elementData) {
+                                this.log(`✅ ${chartKey} Position ${index + 1} (${pos.description}): ${elementData.label}`, 'success');
+                            } else {
+                                this.log(`❌ ${chartKey} Position ${index + 1} (${pos.description}): Failed`, 'error');
+                            }
+                        });
+                    }
+                });
+            }
+
+            runLeftClickTests() {
+                this.log('Testing left-click element detection...', 'info');
+
+                Object.keys(this.charts).forEach(chartKey => {
+                    const chart = this.charts[chartKey];
+                    const canvas = document.getElementById(`test${chartKey.charAt(0).toUpperCase() + chartKey.slice(1).replace('Chart', 'Chart')}`);
+
+                    if (canvas && chart) {
+                        // Test center position
+                        const canvasPosition = { x: 150, y: 125 };
+                        const elementData = this.getChartElementDataAtPosition(chart, canvasPosition);
+
+                        if (elementData) {
+                            this.log(`✅ ${chartKey} Left-click: ${elementData.label}`, 'success');
+                        } else {
+                            this.log(`❌ ${chartKey} Left-click: Failed`, 'error');
+                        }
+                    }
+                });
+            }
+
+            clearLog() {
+                this.logContainer.innerHTML = '';
+            }
+        }
+
+        // Global functions for context menu
+        function filterByThisItem() {
+            const contextMenu = document.getElementById('testContextMenu');
+            const elementLabel = contextMenu.getAttribute('data-element-label');
+            const elementType = contextMenu.getAttribute('data-element-type');
+
+            if (elementLabel && elementLabel !== 'null') {
+                alert(`Filter by ${elementType}: ${elementLabel}`);
+            } else {
+                alert('No element data available for filtering');
+            }
+
+            hideContextMenu();
+        }
+
+        function viewDetails() {
+            const contextMenu = document.getElementById('testContextMenu');
+            const elementLabel = contextMenu.getAttribute('data-element-label');
+            const elementType = contextMenu.getAttribute('data-element-type');
+
+            if (elementLabel && elementLabel !== 'null') {
+                alert(`View details for ${elementType}: ${elementLabel}`);
+            } else {
+                alert('No element data available for viewing details');
+            }
+
+            hideContextMenu();
+        }
+
+        function hideContextMenu() {
+            document.getElementById('testContextMenu').style.display = 'none';
+        }
+
+        // Initialize test app
+        const testApp = new ContextMenuTest();
+
+        // Global test functions
+        function createTestCharts() {
+            testApp.createTestCharts();
+        }
+
+        function runRightClickTests() {
+            testApp.runRightClickTests();
+        }
+
+        function runLeftClickTests() {
+            testApp.runLeftClickTests();
+        }
+
+        function clearLog() {
+            testApp.clearLog();
+        }
+    </script>
+</body>
+</html>

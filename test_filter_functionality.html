@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filter by This Item - Test Suite</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-controls {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .test-button.danger {
+            background: #dc3545;
+        }
+        .test-button.danger:hover {
+            background: #c82333;
+        }
+        .test-button.success {
+            background: #28a745;
+        }
+        .test-button.success:hover {
+            background: #218838;
+        }
+        .test-results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+        .test-result {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .test-result.pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .test-result.fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .test-result.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        .chart-container {
+            display: inline-block;
+            width: 300px;
+            height: 300px;
+            margin: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            position: relative;
+        }
+        .chart-title {
+            background: #007bff;
+            color: white;
+            padding: 8px;
+            margin: 0;
+            font-size: 14px;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-section h3 {
+            margin-top: 0;
+            color: #333;
+        }
+        .filter-indicator {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            z-index: 1000;
+        }
+        .context-menu {
+            position: absolute;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            z-index: 10000;
+            display: none;
+        }
+        .context-menu-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .context-menu-item:hover {
+            background: #f0f0f0;
+        }
+        .context-menu-separator {
+            height: 1px;
+            background: #eee;
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🧪 Filter by This Item - Test Suite</h1>
+
+        <div class="test-controls">
+            <h3>Test Controls</h3>
+            <button class="test-button" onclick="loadSampleData()">Load Sample Data</button>
+            <button class="test-button" onclick="runAllTests()">Run All Tests</button>
+            <button class="test-button danger" onclick="clearAllFilters()">Clear All Filters</button>
+            <button class="test-button" onclick="resetTestResults()">Reset Results</button>
+        </div>
+
+        <div class="test-results" id="testResults">
+            <h3>Test Results</h3>
+            <div id="resultsContainer"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Test Charts</h3>
+            <div class="chart-container">
+                <h4 class="chart-title">Disease Distribution (Pie)</h4>
+                <canvas id="testDiseaseChart" width="300" height="250"></canvas>
+            </div>
+            <div class="chart-container">
+                <h4 class="chart-title">Risk Rating Distribution (Bar)</h4>
+                <canvas id="testRiskChart" width="300" height="250"></canvas>
+            </div>
+            <div class="chart-container">
+                <h4 class="chart-title">Protocol Usage (Bar)</h4>
+                <canvas id="testProtocolChart" width="300" height="250"></canvas>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Data Table</h3>
+            <div id="testDataTable" style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px;">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead style="background: #f8f9fa;">
+                        <tr>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Member</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Disease</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Risk</th>
+                            <th style="padding: 8px; border: 1px solid #ddd;">Type</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu for Testing -->
+    <div id="testContextMenu" class="context-menu">
+        <div class="context-menu-item" onclick="testFilterByItem()">
+            <i>🔍</i> Filter by This Item
+        </div>
+        <div class="context-menu-item" onclick="testViewDetails()">
+            <i>👁️</i> View Details
+        </div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" onclick="hideContextMenu()">
+            <i>❌</i> Close Menu
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        let testApp = null;
+        let testResults = [];
+        let currentTestIndex = 0;
+
+        // Test Application Class
+        class TestRxReportingApp {
+            constructor() {
+                this.data = [];
+                this.filteredData = [];
+                this.currentPage = 1;
+                this.itemsPerPage = 20;
+                this.charts = {};
+                this.chartFilters = new Map();
+                this.chartElementData = null;
+
+                this.initializeElements();
+                this.bindEvents();
+            }
+
+            initializeElements() {
+                this.testDiseaseChart = document.getElementById('testDiseaseChart').getContext('2d');
+                this.testRiskChart = document.getElementById('testRiskChart').getContext('2d');
+                this.testProtocolChart = document.getElementById('testProtocolChart').getContext('2d');
+                this.tableBody = document.getElementById('tableBody');
+            }
+
+            bindEvents() {
+                // Add chart event listeners after charts are created
+                this.addChartEventListeners();
+            }
+
+            async loadSampleData() {
+                try {
+                    // Use mock data instead of fetching from file
+                    const mockData = this.generateMockData();
+                    this.data = this.processSampleData(mockData);
+                    this.initializeDashboard();
+                    this.addTestResult('Load Sample Data', 'PASS', 'Mock sample data loaded successfully');
+                    return true;
+                } catch (error) {
+                    console.error('Error loading sample data:', error);
+                    this.addTestResult('Load Sample Data', 'FAIL', `Error: ${error.message}`);
+                    return false;
+                }
+            }
+
+            generateMockData() {
+                const diseases = ['Diabetes', 'Hypertension', 'Heart Disease', 'Cancer', 'Asthma', 'Arthritis'];
+                const riskLevels = ['High Risk', 'Medium Risk', 'Low Risk'];
+                const calcTypes = ['Adherence', 'ManualPathology', 'Clinical', 'Lab Results', 'Screening'];
+                const members = [];
+
+                // Generate 50 mock records
+                for (let i = 1; i <= 50; i++) {
+                    const disease = diseases[Math.floor(Math.random() * diseases.length)];
+                    const risk = riskLevels[Math.floor(Math.random() * riskLevels.length)];
+                    const calcType = calcTypes[Math.floor(Math.random() * calcTypes.length)];
+
+                    members.push({
+                        MemberNumber: `100${String(i).padStart(3, '0')}`,
+                        DependantCode: '0',
+                        DiseaseProtocolName: disease,
+                        RiskRatingName: risk,
+                        RiskCalculationTypeName: calcType,
+                        DateCalculated: `2025-09-${String(Math.floor(Math.random() * 30) + 1).padStart(2, '0')} 10:30:00.000`,
+                        MemberDependant: `${100000 + i} - 00`
+                    });
+                }
+
+                return members;
+            }
+
+            processSampleData(sampleData) {
+                return sampleData.slice(0, 100).map(row => ({ // Limit to 100 records for testing
+                    MemberNumber: row.MemberNumber,
+                    DependentCode: row.DependantCode,
+                    DiseaseProtocolName: row.DiseaseProtocolName,
+                    RiskRatingName: row.RiskRatingName,
+                    RiskCalculationTypeName: row.RiskCalculationTypeName,
+                    DateCalculated: row.DateCalculated,
+                    MemberDependant: row.MemberDependant,
+                    isActive: true,
+                    activeStatusReason: 'Sample data loaded',
+                    activeStatusSource: 'sample_data'
+                }));
+            }
+
+            initializeDashboard() {
+                this.filteredData = [...this.data];
+                this.currentPage = 1;
+                this.renderTable();
+                this.initializeCharts();
+            }
+
+            initializeCharts() {
+                this.createDiseaseChart();
+                this.createRiskChart();
+                this.createProtocolChart();
+                this.addChartEventListeners();
+            }
+
+            addChartEventListeners() {
+                Object.keys(this.charts).forEach(chartKey => {
+                    const chart = this.charts[chartKey];
+                    if (chart) {
+                        this.addChartClickListener(chart, chartKey);
+                    }
+                });
+            }
+
+            addChartClickListener(chart, chartKey) {
+                chart.canvas.addEventListener('click', (event) => {
+                    const canvasPosition = Chart.helpers.getRelativePosition(event, chart);
+                    let elementData = null;
+
+                    switch (chart.config.type) {
+                        case 'pie':
+                        case 'doughnut':
+                            elementData = this.getPieChartElementData(chart, canvasPosition);
+                            break;
+                        case 'bar':
+                            elementData = this.getBarChartElementData(chart, canvasPosition);
+                            break;
+                        case 'line':
+                            elementData = this.getLineChartElementData(chart, canvasPosition);
+                            break;
+                        default:
+                            elementData = this.getGenericChartElementData(chart, canvasPosition);
+                    }
+
+                    if (elementData) {
+                        this.chartElementData = {
+                            chartId: chartKey,
+                            chartType: chart.config.type,
+                            ...elementData
+                        };
+                        console.log('Chart element clicked:', this.chartElementData);
+                    }
+                });
+            }
+
+            getPieChartElementData(chart, position) {
+                const elements = chart.getElementsAtEventForMode(position, 'nearest', { intersect: true }, false);
+                if (elements.length > 0) {
+                    const element = elements[0];
+                    const dataset = chart.data.datasets[element.datasetIndex];
+                    const dataIndex = element.index;
+
+                    return {
+                        label: chart.data.labels[dataIndex],
+                        value: dataset.data[dataIndex],
+                        index: dataIndex,
+                        datasetIndex: element.datasetIndex,
+                        elementType: 'slice'
+                    };
+                }
+                return null;
+            }
+
+            getBarChartElementData(chart, position) {
+                const elements = chart.getElementsAtEventForMode(position, 'nearest', { intersect: true }, false);
+                if (elements.length > 0) {
+                    const element = elements[0];
+                    const dataset = chart.data.datasets[element.datasetIndex];
+                    const dataIndex = element.index;
+
+                    return {
+                        label: chart.data.labels[dataIndex],
+                        value: dataset.data[dataIndex],
+                        index: dataIndex,
+                        datasetIndex: element.datasetIndex,
+                        elementType: 'bar'
+                    };
+                }
+                return null;
+            }
+
+            getLineChartElementData(chart, position) {
+                const elements = chart.getElementsAtEventForMode(position, 'nearest', { intersect: true }, false);
+                if (elements.length > 0) {
+                    const element = elements[0];
+                    const dataset = chart.data.datasets[element.datasetIndex];
+                    const dataIndex = element.index;
+
+                    return {
+                        label: chart.data.labels[dataIndex],
+                        value: dataset.data[dataIndex],
+                        index: dataIndex,
+                        datasetIndex: element.datasetIndex,
+                        elementType: 'point'
+                    };
+                }
+                return null;
+            }
+
+            getGenericChartElementData(chart, position) {
+                const elements = chart.getElementsAtEventForMode(position, 'nearest', { intersect: true }, false);
+                if (elements.length > 0) {
+                    const element = elements[0];
+                    const dataset = chart.data.datasets[element.datasetIndex];
+                    const dataIndex = element.index;
+
+                    return {
+                        label: chart.data.labels[dataIndex] || `Element ${dataIndex}`,
+                        value: dataset.data[dataIndex],
+                        index: dataIndex,
+                        datasetIndex: element.datasetIndex,
+                        elementType: 'element'
+                    };
+                }
+                return null;
+            }
+
+            createDiseaseChart() {
+                const diseaseData = this.getDiseaseDistribution();
+                const chartConfig = this.getChartConfig('pie', diseaseData, 'Disease Distribution');
+
+                if (this.charts.diseaseChart) {
+                    this.charts.diseaseChart.destroy();
+                }
+
+                this.charts.diseaseChart = new Chart(this.testDiseaseChart, chartConfig);
+            }
+
+            createRiskChart() {
+                const riskData = this.getRiskDistribution();
+                const chartConfig = this.getChartConfig('bar', riskData, 'Risk Rating Distribution');
+
+                if (this.charts.riskChart) {
+                    this.charts.riskChart.destroy();
+                }
+
+                this.charts.riskChart = new Chart(this.testRiskChart, chartConfig);
+            }
+
+            createProtocolChart() {
+                const protocolData = this.getProtocolUsageData();
+                const chartConfig = this.getChartConfig('bar', protocolData, 'Protocol Usage');
+
+                if (this.charts.protocolChart) {
+                    this.charts.protocolChart.destroy();
+                }
+
+                this.charts.protocolChart = new Chart(this.testProtocolChart, chartConfig);
+            }
+
+            getDiseaseDistribution() {
+                const peoplePerDisease = new Map();
+                this.data.forEach(row => {
+                    if (!row.isActive) return;
+                    const disease = row.DiseaseProtocolName || 'Unknown';
+                    const personKey = `${row.MemberNumber}-${row.DependentCode}`;
+                    if (!peoplePerDisease.has(disease)) {
+                        peoplePerDisease.set(disease, new Set());
+                    }
+                    peoplePerDisease.get(disease).add(personKey);
+                });
+
+                const labels = Array.from(peoplePerDisease.keys());
+                const data = labels.map(disease => peoplePerDisease.get(disease).size);
+
+                return {
+                    labels: labels,
+                    data: data,
+                    backgroundColor: this.generateColors(labels.length)
+                };
+            }
+
+            getRiskDistribution() {
+                const peoplePerRisk = new Map();
+                this.data.forEach(row => {
+                    if (!row.isActive) return;
+                    const risk = row.RiskRatingName || 'Unknown';
+                    const personKey = `${row.MemberNumber}-${row.DependentCode}`;
+                    if (!peoplePerRisk.has(risk)) {
+                        peoplePerRisk.set(risk, new Set());
+                    }
+                    peoplePerRisk.get(risk).add(personKey);
+                });
+
+                const labels = Array.from(peoplePerRisk.keys());
+                const data = labels.map(risk => peoplePerRisk.get(risk).size);
+
+                return {
+                    labels: labels,
+                    data: data,
+                    backgroundColor: this.generateColors(labels.length, true)
+                };
+            }
+
+            getProtocolUsageData() {
+                const protocolCount = {};
+                this.data.forEach(row => {
+                    if (!row.isActive) return;
+                    const protocol = row.DiseaseProtocolName || 'Unknown';
+                    protocolCount[protocol] = (protocolCount[protocol] || 0) + 1;
+                });
+
+                const sortedProtocols = Object.entries(protocolCount)
+                    .sort(([,a], [,b]) => b - a)
+                    .slice(0, 10);
+
+                return {
+                    labels: sortedProtocols.map(([protocol]) => protocol),
+                    data: sortedProtocols.map(([,count]) => count),
+                    backgroundColor: this.generateColors(sortedProtocols.length)
+                };
+            }
+
+            getChartConfig(type, data, label) {
+                const baseConfig = {
+                    type: type,
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: label,
+                            data: data.data,
+                            backgroundColor: data.backgroundColor,
+                            borderColor: data.backgroundColor ? data.backgroundColor.map(color => color.replace('0.6', '1')) : undefined,
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: false,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: { padding: 10, usePointStyle: true }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: (context) => {
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((context.raw / total) * 100).toFixed(1);
+                                        return `${context.label}: ${context.raw} (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                if (type === 'bar') {
+                    baseConfig.options.scales = {
+                        y: { beginAtZero: true },
+                        x: { ticks: { maxRotation: 45, minRotation: 45 } }
+                    };
+                }
+
+                return baseConfig;
+            }
+
+            generateColors(count, isRiskChart = false) {
+                const colors = [];
+                const riskColors = {
+                    'High Risk': 'rgba(220, 53, 69, 0.6)',
+                    'Low Risk': 'rgba(40, 167, 69, 0.6)',
+                    'Medium Risk': 'rgba(255, 193, 7, 0.6)'
+                };
+
+                for (let i = 0; i < count; i++) {
+                    if (isRiskChart) {
+                        const riskLevels = Object.keys(riskColors);
+                        colors.push(riskColors[riskLevels[i % riskLevels.length]]);
+                    } else {
+                        const hue = (i * 137.508) % 360;
+                        colors.push(`hsla(${hue}, 70%, 50%, 0.6)`);
+                    }
+                }
+                return colors;
+            }
+
+            renderTable() {
+                this.tableBody.innerHTML = '';
+                const startIndex = (this.currentPage - 1) * this.itemsPerPage;
+                const endIndex = startIndex + this.itemsPerPage;
+                const pageData = this.filteredData.slice(startIndex, endIndex);
+
+                pageData.forEach((row, index) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="padding: 8px; border: 1px solid #ddd;">${row.MemberNumber || '-'}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${row.DiseaseProtocolName || '-'}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${row.RiskRatingName || '-'}</td>
+                        <td style="padding: 8px; border: 1px solid #ddd;">${row.RiskCalculationTypeName || '-'}</td>
+                    `;
+                    this.tableBody.appendChild(tr);
+                });
+            }
+
+            // Chart Filtering Methods
+            createChartFilter(chartId, elementLabel, elementValue, elementIndex, elementType, chartType) {
+                let filterField = '';
+                let filterValue = '';
+                let description = '';
+
+                switch (chartId) {
+                    case 'diseaseChart':
+                        filterField = 'DiseaseProtocolName';
+                        filterValue = elementLabel;
+                        description = `Disease: ${elementLabel}`;
+                        break;
+                    case 'riskChart':
+                        filterField = 'RiskRatingName';
+                        filterValue = elementLabel;
+                        description = `Risk Level: ${elementLabel}`;
+                        break;
+                    case 'protocolChart':
+                        filterField = 'DiseaseProtocolName';
+                        filterValue = elementLabel;
+                        description = `Protocol: ${elementLabel}`;
+                        break;
+                    default:
+                        return null;
+                }
+
+                return {
+                    chartId,
+                    chartType,
+                    elementType,
+                    elementLabel,
+                    elementValue,
+                    filterField,
+                    filterValue,
+                    description
+                };
+            }
+
+            applyChartFilters() {
+                let filtered = [...this.data];
+
+                this.chartFilters.forEach((filterInfo, chartId) => {
+                    filtered = filtered.filter(row => {
+                        const rowValue = row[filterInfo.filterField];
+                        return rowValue === filterInfo.filterValue;
+                    });
+                });
+
+                this.filteredData = filtered;
+                this.currentPage = 1;
+                this.renderTable();
+            }
+
+            clearChartFilter(chartId) {
+                if (this.chartFilters.has(chartId)) {
+                    this.chartFilters.delete(chartId);
+                    this.applyChartFilters();
+                    this.updateActiveFilterIndicators();
+                }
+            }
+
+            clearAllChartFilters() {
+                this.chartFilters.clear();
+                this.applyChartFilters();
+                this.updateActiveFilterIndicators();
+            }
+
+            updateActiveFilterIndicators() {
+                // Remove existing filter indicators
+                document.querySelectorAll('.filter-indicator').forEach(indicator => indicator.remove());
+
+                // Add filter indicators to chart containers
+                this.chartFilters.forEach((filterInfo, chartId) => {
+                    const chartContainer = document.querySelector(`[id="${chartId}"]`)?.closest('.chart-container');
+                    if (chartContainer) {
+                        const indicator = document.createElement('div');
+                        indicator.className = 'filter-indicator';
+                        indicator.innerHTML = `
+                            <span>${filterInfo.description}</span>
+                            <button onclick="testApp.clearChartFilter('${chartId}')" style="margin-left: 5px; background: none; border: none; color: white; cursor: pointer;">×</button>
+                        `;
+                        chartContainer.appendChild(indicator);
+                    }
+                });
+            }
+
+            addTestResult(testName, status, message) {
+                testResults.push({
+                    testName,
+                    status,
+                    message,
+                    timestamp: new Date().toISOString()
+                });
+                this.updateTestResultsDisplay();
+            }
+
+            updateTestResultsDisplay() {
+                const container = document.getElementById('resultsContainer');
+                container.innerHTML = testResults.map(result => `
+                    <div class="test-result ${result.status.toLowerCase()}">
+                        <strong>${result.testName}</strong>: ${result.status} - ${result.message}
+                        <small style="display: block; margin-top: 5px; opacity: 0.7;">${result.timestamp}</small>
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Global functions for testing
+        async function loadSampleData() {
+            testApp = new TestRxReportingApp();
+            const success = await testApp.loadSampleData();
+            if (success) {
+                document.getElementById('resultsContainer').innerHTML = '<div class="test-result info">Sample data loaded. Ready for testing!</div>';
+            }
+        }
+
+        function runAllTests() {
+            if (!testApp) {
+                alert('Please load sample data first!');
+                return;
+            }
+
+            testResults = [];
+            currentTestIndex = 0;
+
+            // Run tests sequentially
+            runNextTest();
+        }
+
+        function runNextTest() {
+            if (currentTestIndex >= testScenarios.length) {
+                testApp.addTestResult('All Tests', 'INFO', `Completed ${testScenarios.length} test scenarios`);
+                return;
+            }
+
+            const test = testScenarios[currentTestIndex];
+            currentTestIndex++;
+
+            try {
+                test.execute();
+                setTimeout(runNextTest, 500); // Small delay between tests
+            } catch (error) {
+                testApp.addTestResult(test.name, 'FAIL', `Error: ${error.message}`);
+                setTimeout(runNextTest, 500);
+            }
+        }
+
+        function clearAllFilters() {
+            if (testApp) {
+                testApp.clearAllChartFilters();
+                testApp.addTestResult('Clear All Filters', 'INFO', 'All filters cleared');
+            }
+        }
+
+        function resetTestResults() {
+            testResults = [];
+            document.getElementById('resultsContainer').innerHTML = '';
+        }
+
+        // Test scenarios
+        const testScenarios = [
+            {
+                name: 'Chart Element Detection - Pie Chart',
+                execute: () => {
+                    // Simulate clicking on a pie chart element
+                    const chart = testApp.charts.diseaseChart;
+                    if (chart) {
+                        // Simulate click on first element
+                        const mockEvent = {
+                            target: chart.canvas,
+                            offsetX: 150,
+                            offsetY: 100
+                        };
+                        chart.canvas.dispatchEvent(new MouseEvent('click', mockEvent));
+
+                        if (testApp.chartElementData) {
+                            testApp.addTestResult('Chart Element Detection - Pie Chart', 'PASS',
+                                `Detected: ${testApp.chartElementData.label} (${testApp.chartElementData.elementType})`);
+                        } else {
+                            testApp.addTestResult('Chart Element Detection - Pie Chart', 'FAIL', 'No element detected');
+                        }
+                    } else {
+                        testApp.addTestResult('Chart Element Detection - Pie Chart', 'FAIL', 'Chart not found');
+                    }
+                }
+            },
+            {
+                name: 'Chart Element Detection - Bar Chart',
+                execute: () => {
+                    // Simulate clicking on a bar chart element
+                    const chart = testApp.charts.riskChart;
+                    if (chart) {
+                        // Simulate click on first bar
+                        const mockEvent = {
+                            target: chart.canvas,
+                            offsetX: 50,
+                            offsetY: 200
+                        };
+                        chart.canvas.dispatchEvent(new MouseEvent('click', mockEvent));
+
+                        if (testApp.chartElementData) {
+                            testApp.addTestResult('Chart Element Detection - Bar Chart', 'PASS',
+                                `Detected: ${testApp.chartElementData.label} (${testApp.chartElementData.elementType})`);
+                        } else {
+                            testApp.addTestResult('Chart Element Detection - Bar Chart', 'FAIL', 'No element detected');
+                        }
+                    } else {
+                        testApp.addTestResult('Chart Element Detection - Bar Chart', 'FAIL', 'Chart not found');
+                    }
+                }
+            },
+            {
+                name: 'Filter by Disease Chart Element',
+                execute: () => {
+                    // Simulate clicking on disease chart element
+                    const chart = testApp.charts.diseaseChart;
+                    if (chart && chart.data.labels.length > 0) {
+                        const firstLabel = chart.data.labels[0];
+                        const mockEvent = {
+                            target: chart.canvas,
+                            offsetX: 150,
+                            offsetY: 100
+                        };
+                        chart.canvas.dispatchEvent(new MouseEvent('click', mockEvent));
+
+                        if (testApp.chartElementData) {
+                            const filterInfo = testApp.createChartFilter(
+                                'diseaseChart',
+                                testApp.chartElementData.label,
+                                testApp.chartElementData.value,
+                                testApp.chartElementData.index,
+                                testApp.chartElementData.elementType,
+                                testApp.chartElementData.chartType
+                            );
+
+                            if (filterInfo) {
+                                testApp.chartFilters.set('diseaseChart', filterInfo);
+                                testApp.applyChartFilters();
+
+                                const originalCount = testApp.data.length;
+                                const filteredCount = testApp.filteredData.length;
+
+                                if (filteredCount < originalCount) {
+                                    testApp.addTestResult('Filter by Disease Chart Element', 'PASS',
+                                        `Filtered from ${originalCount} to ${filteredCount} records for disease: ${firstLabel}`);
+                                } else {
+                                    testApp.addTestResult('Filter by Disease Chart Element', 'FAIL',
+                                        `No filtering occurred. Original: ${originalCount}, Filtered: ${filteredCount}`);
+                                }
+                            } else {
+                                testApp.addTestResult('Filter by Disease Chart Element', 'FAIL', 'Could not create filter');
+                            }
+                        } else {
+                            testApp.addTestResult('Filter by Disease Chart Element', 'FAIL', 'No chart element data');
+                        }
+                    } else {
+                        testApp.addTestResult('Filter by Disease Chart Element', 'FAIL', 'Chart or data not available');
+                    }
+                }
+            },
+            {
+                name: 'Filter by Risk Chart Element',
+                execute: () => {
+                    // Simulate clicking on risk chart element
+                    const chart = testApp.charts.riskChart;
+                    if (chart && chart.data.labels.length > 0) {
+                        const firstLabel = chart.data.labels[0];
+                        const mockEvent = {
+                            target: chart.canvas,
+                            offsetX: 50,
+                            offsetY: 200
+                        };
+                        chart.canvas.dispatchEvent(new MouseEvent('click', mockEvent));
+
+                        if (testApp.chartElementData) {
+                            const filterInfo = testApp.createChartFilter(
+                                'riskChart',
+                                testApp.chartElementData.label,
+                                testApp.chartElementData.value,
+                                testApp.chartElementData.index,
+                                testApp.chartElementData.elementType,
+                                testApp.chartElementData.chartType
+                            );
+
+                            if (filterInfo) {
+                                testApp.chartFilters.set('riskChart', filterInfo);
+                                testApp.applyChartFilters();
+
+                                const originalCount = testApp.data.length;
+                                const filteredCount = testApp.filteredData.length;
+
+                                if (filteredCount < originalCount) {
+                                    testApp.addTestResult('Filter by Risk Chart Element', 'PASS',
+                                        `Filtered from ${originalCount} to ${filteredCount} records for risk: ${firstLabel}`);
+                                } else {
+                                    testApp.addTestResult('Filter by Risk Chart Element', 'FAIL',
+                                        `No filtering occurred. Original: ${originalCount}, Filtered: ${filteredCount}`);
+                                }
+                            } else {
+                                testApp.addTestResult('Filter by Risk Chart Element', 'FAIL', 'Could not create filter');
+                            }
+                        } else {
+                            testApp.addTestResult('Filter by Risk Chart Element', 'FAIL', 'No chart element data');
+                        }
+                    } else {
+                        testApp.addTestResult('Filter by Risk Chart Element', 'FAIL', 'Chart or data not available');
+                    }
+                }
+            },
+            {
+                name: 'Multiple Chart Filters',
+                execute: () => {
+                    // Apply multiple filters
+                    const diseaseChart = testApp.charts.diseaseChart;
+                    const riskChart = testApp.charts.riskChart;
+
+                    if (diseaseChart && riskChart && diseaseChart.data.labels.length > 0 && riskChart.data.labels.length > 0) {
+                        // Apply disease filter
+                        const diseaseLabel = diseaseChart.data.labels[0];
+                        const diseaseFilter = testApp.createChartFilter('diseaseChart', diseaseLabel, 1, 0, 'slice', 'pie');
+                        testApp.chartFilters.set('diseaseChart', diseaseFilter);
+
+                        // Apply risk filter
+                        const riskLabel = riskChart.data.labels[0];
+                        const riskFilter = testApp.createChartFilter('riskChart', riskLabel, 1, 0, 'bar', 'bar');
+                        testApp.chartFilters.set('riskChart', riskFilter);
+
+                        testApp.applyChartFilters();
+
+                        const originalCount = testApp.data.length;
+                        const filteredCount = testApp.filteredData.length;
+
+                        if (filteredCount < originalCount) {
+                            testApp.addTestResult('Multiple Chart Filters', 'PASS',
+                                `Applied 2 filters. Filtered from ${originalCount} to ${filteredCount} records`);
+                        } else {
+                            testApp.addTestResult('Multiple Chart Filters', 'FAIL',
+                                `No filtering occurred. Original: ${originalCount}, Filtered: ${filteredCount}`);
+                        }
+                    } else {
+                        testApp.addTestResult('Multiple Chart Filters', 'FAIL', 'Charts or data not available');
+                    }
+                }
+            },
+            {
+                name: 'Filter Management - Individual Removal',
+                execute: () => {
+                    const initialFilterCount = testApp.chartFilters.size;
+                    if (initialFilterCount > 0) {
+                        const firstFilterKey = testApp.chartFilters.keys().next().value;
+                        testApp.clearChartFilter(firstFilterKey);
+
+                        const finalFilterCount = testApp.chartFilters.size;
+                        if (finalFilterCount === initialFilterCount - 1) {
+                            testApp.addTestResult('Filter Management - Individual Removal', 'PASS',
+                                `Removed 1 filter. Filters: ${initialFilterCount} → ${finalFilterCount}`);
+                        } else {
+                            testApp.addTestResult('Filter Management - Individual Removal', 'FAIL',
+                                `Filter count not changed correctly. Expected: ${initialFilterCount - 1}, Got: ${finalFilterCount}`);
+                        }
+                    } else {
+                        testApp.addTestResult('Filter Management - Individual Removal', 'FAIL', 'No filters to remove');
+                    }
+                }
+            },
+            {
+                name: 'Filter Management - Clear All',
+                execute: () => {
+                    const initialFilterCount = testApp.chartFilters.size;
+                    if (initialFilterCount > 0) {
+                        testApp.clearAllChartFilters();
+
+                        const finalFilterCount = testApp.chartFilters.size;
+                        if (finalFilterCount === 0) {
+                            testApp.addTestResult('Filter Management - Clear All', 'PASS',
+                                `Cleared all filters. Filters: ${initialFilterCount} → ${finalFilterCount}`);
+                        } else {
+                            testApp.addTestResult('Filter Management - Clear All', 'FAIL',
+                                `Filters not cleared. Expected: 0, Got: ${finalFilterCount}`);
+                        }
+                    } else {
+                        testApp.addTestResult('Filter Management - Clear All', 'INFO', 'No filters to clear');
+                    }
+                }
+            },
+            {
+                name: 'Filter State Persistence',
+                execute: () => {
+                    // Apply a filter
+                    const chart = testApp.charts.diseaseChart;
+                    if (chart && chart.data.labels.length > 0) {
+                        const label = chart.data.labels[0];
+                        const filter = testApp.createChartFilter('diseaseChart', label, 1, 0, 'slice', 'pie');
+                        testApp.chartFilters.set('diseaseChart', filter);
+                        testApp.applyChartFilters();
+
+                        const filteredCount = testApp.filteredData.length;
+
+                        // Simulate page refresh by recreating charts
+                        testApp.initializeCharts();
+
+                        // Check if filter is still applied
+                        const newFilteredCount = testApp.filteredData.length;
+
+                        if (newFilteredCount === filteredCount) {
+                            testApp.addTestResult('Filter State Persistence', 'PASS',
+                                `Filter state maintained after chart recreation. Records: ${newFilteredCount}`);
+                        } else {
+                            testApp.addTestResult('Filter State Persistence', 'FAIL',
+                                `Filter state lost. Expected: ${filteredCount}, Got: ${newFilteredCount}`);
+                        }
+                    } else {
+                        testApp.addTestResult('Filter State Persistence', 'FAIL', 'Chart or data not available');
+                    }
+                }
+            }
+        ];
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Test suite loaded. Auto-loading sample data...');
+            await loadSampleData();
+            console.log('Sample data loaded. Ready for testing!');
+
+            // Add a test button for the fixed functionality
+            const testControls = document.querySelector('.test-controls');
+            const testButton = document.createElement('button');
+            testButton.className = 'test-button success';
+            testButton.innerHTML = '<i>🔧</i> Test Fixed Functionality';
+            testButton.onclick = testFixedFunctionality;
+            testControls.appendChild(testButton);
+        });
+
+        // Test the fixed functionality
+        function testFixedFunctionality() {
+            if (!testApp) {
+                alert('Please load sample data first!');
+                return;
+            }
+
+            testApp.addTestResult('Fixed Functionality Test', 'INFO', 'Testing the fixed chart filtering functionality...');
+
+            // Test 1: Chart element detection
+            const diseaseChart = testApp.charts.diseaseChart;
+            if (diseaseChart) {
+                const mockEvent = {
+                    target: diseaseChart.canvas,
+                    offsetX: 150,
+                    offsetY: 100
+                };
+                diseaseChart.canvas.dispatchEvent(new MouseEvent('click', mockEvent));
+
+                if (testApp.chartElementData) {
+                    testApp.addTestResult('Element Detection', 'PASS', `Detected: ${testApp.chartElementData.label}`);
+                } else {
+                    testApp.addTestResult('Element Detection', 'FAIL', 'No element detected');
+                }
+            }
+
+            // Test 2: Context menu with element detection
+            if (testApp.chartElementData) {
+                const chartId = testApp.chartElementData.chartId;
+                const mockEvent = {
+                    target: testApp.charts[chartId.replace('Chart', 'Chart')].canvas,
+                    offsetX: 150,
+                    offsetY: 100,
+                    clientX: 200,
+                    clientY: 150
+                };
+
+                testApp.showChartContextMenu(mockEvent, chartId);
+
+                const contextMenu = document.getElementById('chartContextMenu');
+                if (contextMenu && contextMenu.style.display === 'block') {
+                    const elementLabel = contextMenu.getAttribute('data-element-label');
+                    if (elementLabel) {
+                        testApp.addTestResult('Context Menu Integration', 'PASS', `Context menu shows: ${elementLabel}`);
+                    } else {
+                        testApp.addTestResult('Context Menu Integration', 'FAIL', 'No element data in context menu');
+                    }
+                } else {
+                    testApp.addTestResult('Context Menu Integration', 'FAIL', 'Context menu not displayed');
+                }
+
+                testApp.hideChartContextMenu();
+            }
+
+            // Test 3: Filter functionality
+            if (testApp.chartElementData) {
+                const chartId = testApp.chartElementData.chartId;
+                const originalCount = testApp.data.length;
+
+                // Simulate the filter operation
+                const filterInfo = testApp.createChartFilter(
+                    chartId,
+                    testApp.chartElementData.label,
+                    testApp.chartElementData.value,
+                    testApp.chartElementData.index,
+                    testApp.chartElementData.elementType,
+                    testApp.chartElementData.chartType
+                );
+
+                if (filterInfo) {
+                    testApp.chartFilters.set(chartId, filterInfo);
+                    testApp.applyChartFilters();
+
+                    const filteredCount = testApp.filteredData.length;
+
+                    if (filteredCount < originalCount) {
+                        testApp.addTestResult('Filter Application', 'PASS', `Filtered from ${originalCount} to ${filteredCount} records`);
+                    } else {
+                        testApp.addTestResult('Filter Application', 'FAIL', `No filtering occurred: ${originalCount} → ${filteredCount}`);
+                    }
+                } else {
+                    testApp.addTestResult('Filter Application', 'FAIL', 'Could not create filter');
+                }
+            }
+
+            testApp.addTestResult('Fixed Functionality Test', 'INFO', 'Test completed. Check results above.');
+        }
+    </script>
+</body>
+</html>

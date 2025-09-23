@@ -122,6 +122,23 @@
 
                 <!-- Charts Section -->
                 <div class="charts-section">
+                    <!-- Full-width chart for members with multiple diseases -->
+                    <div class="chart-container full-width-chart">
+                        <div class="chart-header">
+                            <h3>Members with Multiple Diseases</h3>
+                            <div class="chart-controls">
+                                <select id="multipleDiseasesChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="doughnut">Doughnut Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('multipleDiseasesChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="multipleDiseasesChart"></canvas>
+                    </div>
                     <div class="chart-container">
                         <div class="chart-header">
                             <h3>Disease Distribution</h3>
@@ -278,6 +295,130 @@
                         </div>
                         <canvas id="riskPerProtocolChart"></canvas>
                     </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>High Risk Diabetes - Adherence Risk Protocol</h3>
+                            <div class="chart-controls">
+                                <select id="highRiskDiabetesChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="doughnut">Doughnut Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('highRiskDiabetesChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="highRiskDiabetesChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Members with 3+ Diseases (Detailed)</h3>
+                            <div class="chart-controls">
+                                <select id="multipleDiseasesDetailedChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="doughnut">Doughnut Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('multipleDiseasesDetailedChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="multipleDiseasesDetailedChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Common Disease Combinations (3+ Diseases)</h3>
+                            <div class="chart-controls">
+                                <select id="diseaseCombinationsChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="pie">Pie Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('diseaseCombinationsChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="diseaseCombinationsChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Risk Levels for Multiple Disease Patients</h3>
+                            <div class="chart-controls">
+                                <select id="multipleDiseaseRiskChartType">
+                                    <option value="pie">Pie Chart</option>
+                                    <option value="doughnut">Doughnut Chart</option>
+                                    <option value="bar">Bar Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('multipleDiseaseRiskChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="multipleDiseaseRiskChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Disease Severity in Multiple Disease Cases</h3>
+                            <div class="chart-controls">
+                                <select id="multipleDiseaseSeverityChartType">
+                                    <option value="bar">Bar Chart</option>
+                                    <option value="line">Line Chart</option>
+                                </select>
+                                <button class="btn btn-fullscreen" onclick="app.toggleFullscreen('multipleDiseaseSeverityChart')">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <canvas id="multipleDiseaseSeverityChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- High Risk Members Table Section -->
+                <div class="high-risk-section">
+                    <div class="section-header">
+                        <h3>High Risk Members Priority List</h3>
+                        <div class="section-controls">
+                            <select id="highRiskFilter">
+                                <option value="all">All High Risk Members</option>
+                                <option value="multiple_diseases">Multiple Diseases (3+)</option>
+                                <option value="single_disease">Single Disease</option>
+                            </select>
+                            <select id="highRiskSort">
+                                <option value="risk_desc">Risk Level (High to Low)</option>
+                                <option value="risk_asc">Risk Level (Low to High)</option>
+                                <option value="diseases_desc">Disease Count (High to Low)</option>
+                                <option value="diseases_asc">Disease Count (Low to High)</option>
+                            </select>
+                            <button id="refreshHighRiskTable" class="btn btn-secondary">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-container">
+                        <table id="highRiskTable">
+                            <thead>
+                                <tr>
+                                    <th>Priority Rank</th>
+                                    <th>Member Number</th>
+                                    <th>Dependent Code</th>
+                                    <th>Diseases</th>
+                                    <th>Risk Level</th>
+                                    <th>Risk Score</th>
+                                    <th>Calculation Types</th>
+                                    <th>Last Updated</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="highRiskTableBody">
+                                <!-- High risk members will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="table-summary">
+                        <span id="highRiskSummary">Loading high risk members...</span>
+                    </div>
                 </div>
 
                 <!-- Data Table Section -->
@@ -382,6 +523,12 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <!-- Modular JavaScript Files -->
+    <script src="dataManager.js"></script>
+    <script src="chartManager.js"></script>
+    <script src="uiManager.js"></script>
+    <script src="filterManager.js"></script>
+    <script src="contextMenuManager.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
